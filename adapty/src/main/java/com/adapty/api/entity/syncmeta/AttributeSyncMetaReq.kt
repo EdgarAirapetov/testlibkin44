@@ -3,17 +3,17 @@ package com.adapty.api.entity.syncmeta
 import com.google.gson.annotations.SerializedName
 
 open class AttributeSyncMetaReq {
-    @SerializedName("adapty_sdk_version")
-    var adapty_sdk_version: String? = null
+    @SerializedName("adaptySdkVersion")
+    var adaptySdkVersion: String? = null
 
-    @SerializedName("adapty_sdk_version_build")
-    var adapty_sdk_version_build: Int? = null
+    @SerializedName("adaptySdkVersionBuild")
+    var adaptySdkVersionBuild: Int? = null
 
-    @SerializedName("app_build")
-    var app_build: String? = null
+    @SerializedName("appBuild")
+    var appBuild: String? = null
 
-    @SerializedName("app_version")
-    var app_version: String? = null
+    @SerializedName("appVersion")
+    var appVersion: String? = null
 
     @SerializedName("device")
     var device: String? = null
@@ -30,27 +30,27 @@ open class AttributeSyncMetaReq {
     @SerializedName("timezone")
     var timezone: String? = null
 
-    @SerializedName("attribution_network")
-    var attribution_network: String? = null
+    @SerializedName("attributionNetwork")
+    var attributionNetwork: String? = null
 
-    @SerializedName("attribution_campaign")
-    var attribution_campaign: String? = null
+    @SerializedName("attributionCampaign")
+    var attributionCampaign: String? = null
 
-    @SerializedName("attribution_tracker_token")
-    var attribution_tracker_token: String? = null
+    @SerializedName("attributionTrackerToken")
+    var attributionTrackerToken: String? = null
 
-    @SerializedName("attribution_tracker_name")
-    var attribution_tracker_name: String? = null
+    @SerializedName("attributionTrackerName")
+    var attributionTrackerName: String? = null
 
-    @SerializedName("attribution_adgroup")
-    var attribution_adgroup: String? = null
+    @SerializedName("attributionAdgroup")
+    var attributionAdgroup: String? = null
 
-    @SerializedName("attribution_creative")
-    var attribution_creative: String? = null
+    @SerializedName("attributionCreative")
+    var attributionCreative: String? = null
 
-    @SerializedName("attribution_click_label")
-    var attribution_click_label: String? = null
+    @SerializedName("attributionClickLabel")
+    var attributionClickLabel: String? = null
 
-    @SerializedName("attribution_adid")
-    var attribution_adid: String? = null
+    @SerializedName("attributionAdid")
+    var attributionAdid: String? = null
 }

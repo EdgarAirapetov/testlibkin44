@@ -5,11 +5,12 @@ import android.content.Context
 const val PROFILE_ID = "PROFILE_ID"
 const val CUSTOMER_USER_ID = "CUSTOMER_USER_ID"
 const val INSTALLATION_META_ID = "CUSTOMER_USER_ID"
+const val APP_KEY = "APP_KEY"
 
 class PreferenceManager (context: Context) {
 
-    private val PRIVATE_MODE = 0
-    private val pref = context.getSharedPreferences(PREF_NAME, PRIVATE_MODE)
+    private val privateMode = 0
+    private val pref = context.getSharedPreferences(PREF_NAME, privateMode)
     private val editor = pref.edit()
 
     var profileID: String
@@ -39,8 +40,17 @@ class PreferenceManager (context: Context) {
             editor.commit()
         }
 
+    var appKey: String
+        get() {
+            return pref.getString(APP_KEY, "").toString()
+        }
+        set(appKey) {
+            editor.putString(APP_KEY, appKey)
+            editor.commit()
+        }
+
     companion object {
-        const val PREF_NAME = "AdaptyPrefs"
+        const val PREF_NAME = "AdaptySDKPrefs"
     }
 
 }

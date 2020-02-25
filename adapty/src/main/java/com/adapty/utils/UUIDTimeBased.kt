@@ -7,7 +7,7 @@ import java.util.UUID
 
 object UUIDTimeBased {
 
-    val lock = Any()
+    private val lock = Any()
 
     private var lastTime: Long = 0
     private var clockSequence: Long = 0
@@ -42,7 +42,6 @@ object UUIDTimeBased {
     }
 
     private fun generateIdFromTimestamp(currentTimeMillis: Long): UUID {
-        var time: Long
 
         synchronized(lock) {
             if (currentTimeMillis > lastTime) {
@@ -53,10 +52,8 @@ object UUIDTimeBased {
             }
         }
 
-        time = currentTimeMillis
-
         // low Time
-        time = currentTimeMillis shl 32
+        var time = currentTimeMillis shl 32
 
         // mid Time
         time = time or (currentTimeMillis and 0xFFFF00000000L shr 16)

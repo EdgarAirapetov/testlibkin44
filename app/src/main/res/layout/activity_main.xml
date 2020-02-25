@@ -1,18 +1,156 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/errorsTv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No Errors"
+        app:layout_constraintBottom_toTopOf="@id/descTv"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/receipt_et" />
+
+    <Button
+        android:id="@+id/makePurchase"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Make Purchases"
+        app:layout_constraintBottom_toTopOf="@id/restore"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/validateReceipt"
+        />
+
+    <Button
+        android:id="@+id/validateReceipt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Validate Receipt"
+        app:layout_constraintBottom_toTopOf="@id/restore"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/makePurchase"/>
+
+    <Button
+        android:id="@+id/restore"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Restore"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <TextView
+        android:id="@+id/tv1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/radioType"
+        android:layout_marginBottom="10sp"
+        android:text="Prepared Subscription"/>
+
+    <RadioGroup
+        android:id="@+id/radioSubs"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/makePurchase"
+        app:layout_constraintEnd_toStartOf="@+id/radioType">
+
+        <RadioButton
+            android:id="@+id/first_subs"
+            android:text="adapty_test_1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <RadioButton
+            android:id="@+id/second_subs"
+            android:text="adapty_test_2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </RadioGroup>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="@+id/radioType"
+        app:layout_constraintBottom_toTopOf="@+id/radioType"
+        android:layout_marginBottom="10sp"
+        android:layout_marginStart="10dp"
+        android:text="Type of Purchase"/>
+
+    <RadioGroup
+        android:id="@+id/radioType"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toEndOf="@id/radioSubs"
+        app:layout_constraintBottom_toTopOf="@+id/makePurchase"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <RadioButton
+            android:id="@+id/type_subs"
+            android:text="Subscription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <RadioButton
+            android:id="@+id/type_in_app"
+            android:text="InApp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </RadioGroup>
+
+    <TextView
+        android:id="@+id/receipt_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Current PURCHASE TOKEN:"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:gravity="center"
+        android:padding="20dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <EditText
+        android:id="@+id/receipt_et"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:hint=""
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/receipt_title"/>
+
+    <EditText
+        android:id="@+id/product_et"
+        android:layout_width="match_parent"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/tv1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:hint="product_id"
+        />
+
+    <TextView
+        android:id="@+id/descTv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/product_et"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="10dp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:textColor="@android:color/black"
+        android:text="Input product_id and choose type of purchase\nor choose from prepared one"/>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

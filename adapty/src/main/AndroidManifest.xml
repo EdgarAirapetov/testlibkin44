@@ -1,2 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.adapty" />
+    package="com.adapty" >
+
+    <uses-permission android:name="com.android.vending.BILLING" />
+
+</manifest>
