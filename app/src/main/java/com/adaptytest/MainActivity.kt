@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
             if (receipt_et.length() == 0)
                 return@setOnClickListener
 
-            Adapty.validateReceipt(receipt_et.text.toString(), object : AdaptyValidateCallback {
+            Adapty.validateReceipt(product_et.text.toString(), receipt_et.text.toString(), object : AdaptyValidateCallback {
                 override fun onResult(response: ValidateReceiptResponse?, error: String?) {
                     if (error == null) {
                         errorsTv.text = "Success"

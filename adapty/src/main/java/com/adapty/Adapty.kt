@@ -14,13 +14,15 @@ class Adapty {
         lateinit var applicationContext: Context
         lateinit var preferenceManager: PreferenceManager
 
-        fun activate(applicationContext: Context, appKey: String) {
+        fun activate(applicationContext: Context, appKey: String) = activate(applicationContext, appKey, null)
+
+        fun activate(applicationContext: Context, appKey: String, customerUserId: String?) {
             this.applicationContext = applicationContext
             this.preferenceManager = PreferenceManager(applicationContext)
             this.preferenceManager.appKey = appKey
 
             ApiClientRepository.getInstance(preferenceManager)
-                .createProfile(object : AdaptySystemCallback {
+                .createProfile(customerUserId, object : AdaptySystemCallback {
                     override fun success(response: Any?, reqID: Int) {
                         if (response is CreateProfileResponse) {
                             response.data?.attributes?.profileId?.let {
@@ -40,7 +42,6 @@ class Adapty {
 
                 })
         }
-
 
         fun sendSyncMetaInstallRequest() {
             ApiClientRepository.getInstance(preferenceManager)
@@ -100,9 +101,9 @@ class Adapty {
             InAppPurchases(activity, true, type, "", adaptyCallback)
         }
 
-        fun validateReceipt(purchaseToken: String, adaptyCallback: AdaptyValidateCallback) {
+        fun validateReceipt(productId: String, purchaseToken: String, adaptyCallback: AdaptyValidateCallback) {
             ApiClientRepository.getInstance(preferenceManager)
-                .validatePurchase(purchaseToken, adaptyCallback)
+                .validatePurchase(productId, purchaseToken, adaptyCallback)
         }
     }
 }
