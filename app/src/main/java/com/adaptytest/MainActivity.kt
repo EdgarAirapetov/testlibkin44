@@ -4,15 +4,13 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
 import com.adapty.Adapty
-import com.adapty.api.AdaptyCallback
-import com.adapty.api.AdaptyPurchaseCallback
-import com.adapty.api.AdaptyRestoreCallback
-import com.adapty.api.AdaptyValidateCallback
+import com.adapty.api.*
 import com.adapty.api.responses.ValidateReceiptResponse
 import com.adapty.purchase.INAPP
 import com.adapty.purchase.InAppPurchases
 import com.adapty.purchase.SUBS
 import com.android.billingclient.api.Purchase
+import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -57,51 +55,42 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            Adapty.makePurchase(
-                this,
-                purchaseType,
-                product_et.text.toString(),
-                object : AdaptyPurchaseCallback {
-                    override fun onResult(response: Purchase?, error: String?) {
-                        if (error == null) {
-                            errorsTv.text = "Success"
-                            receipt_et.setText(response?.purchaseToken)
-                            return
-                        }
+            Adapty.makePurchase(this, purchaseType, product_et.text.toString()) { purchase, response, error ->
+                if (error == null) {
+                    errorsTv.text = "Success"
+                    receipt_et.setText(purchase?.purchaseToken)
+                    return@makePurchase
+                }
 
-                        errorsTv.text = error
-                    }
-                })
+                errorsTv.text = error
+            }
+
         }
 
         validateReceipt.setOnClickListener {
             if (receipt_et.length() == 0)
                 return@setOnClickListener
 
-            Adapty.validateReceipt(product_et.text.toString(), receipt_et.text.toString(), object : AdaptyValidateCallback {
-                override fun onResult(response: ValidateReceiptResponse?, error: String?) {
-                    if (error == null) {
-                        errorsTv.text = "Success"
-                        return
-                    }
-
-                    errorsTv.text = error
+            Adapty.validateReceipt(purchaseType, product_et.text.toString(), receipt_et.text.toString()) {response: ValidateReceiptResponse?, error: String? ->
+                if (error == null) {
+                    errorsTv.text = "Success"
+                    return@validateReceipt
                 }
-            })
+
+                errorsTv.text = error
+            }
         }
 
         restore.setOnClickListener {
-            Adapty.restore(this, purchaseType, object : AdaptyRestoreCallback {
-                override fun onResult(error: String?) {
+            Adapty.restore(this) { response, error ->
                     if (error == null) {
                         errorsTv.text = "Success"
-                        return
+                        Toast.makeText(this, Gson().toJson(response), Toast.LENGTH_LONG).show()
+                        return@restore
                     }
 
                     errorsTv.text = error
                 }
-
-            })
         }
     }
 }
