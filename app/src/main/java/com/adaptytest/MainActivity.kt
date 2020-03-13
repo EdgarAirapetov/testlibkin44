@@ -1,15 +1,12 @@
 package com.adaptytest
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
 import com.adapty.Adapty
-import com.adapty.api.*
 import com.adapty.api.responses.ValidateReceiptResponse
 import com.adapty.purchase.INAPP
-import com.adapty.purchase.InAppPurchases
 import com.adapty.purchase.SUBS
-import com.android.billingclient.api.Purchase
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -25,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Adapty.activate(applicationContext, "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU")
+        Adapty.activate(applicationContext, "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU", null)
 
         radioType.setOnCheckedChangeListener { radioGroup, checkedId ->
             purchaseType = when (checkedId) {
@@ -55,7 +52,11 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            Adapty.makePurchase(this, purchaseType, product_et.text.toString()) { purchase, response, error ->
+            Adapty.makePurchase(
+                this,
+                purchaseType,
+                product_et.text.toString()
+            ) { purchase, response, error ->
                 if (error == null) {
                     errorsTv.text = "Success"
                     receipt_et.setText(purchase?.purchaseToken)
@@ -71,10 +72,14 @@ class MainActivity : AppCompatActivity() {
             if (receipt_et.length() == 0)
                 return@setOnClickListener
 
-            Adapty.validateReceipt(purchaseType, product_et.text.toString(), receipt_et.text.toString()) {response: ValidateReceiptResponse?, error: String? ->
+            Adapty.validatePurchase(
+                purchaseType,
+                product_et.text.toString(),
+                receipt_et.text.toString()
+            ) { response: ValidateReceiptResponse?, error: String? ->
                 if (error == null) {
                     errorsTv.text = "Success"
-                    return@validateReceipt
+                    return@validatePurchase
                 }
 
                 errorsTv.text = error
@@ -83,14 +88,14 @@ class MainActivity : AppCompatActivity() {
 
         restore.setOnClickListener {
             Adapty.restore(this) { response, error ->
-                    if (error == null) {
-                        errorsTv.text = "Success"
-                        Toast.makeText(this, Gson().toJson(response), Toast.LENGTH_LONG).show()
-                        return@restore
-                    }
-
-                    errorsTv.text = error
+                if (error == null) {
+                    errorsTv.text = "Success"
+                    Toast.makeText(this, Gson().toJson(response), Toast.LENGTH_LONG).show()
+                    return@restore
                 }
+
+                errorsTv.text = error
+            }
         }
     }
 }

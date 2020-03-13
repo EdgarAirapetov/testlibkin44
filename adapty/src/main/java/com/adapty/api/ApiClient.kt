@@ -15,8 +15,10 @@ import java.net.URL
 
 const val AUTHORIZATION_KEY = "Authorization"
 const val API_KEY_PREFIX = "Api-Key "
+const val TAG = "[Adapty]"
 
 class ApiClient(private var context: Context) {
+
 
     private val serverUrl = "https://api-dev.adapty.io/api/v1/"
     private val preferenceManager = PreferenceManager(context)
@@ -102,11 +104,11 @@ class ApiClient(private var context: Context) {
                     val inputStream = conn.inputStream
 
                     rString = toStringUtf8(inputStream)
-                    Log.e("Response $myUrl: ", rString)
+                    Log.e(com.adapty.api.TAG,"Response $myUrl: $rString")
 
                 } else {
                     rString = toStringUtf8(conn.errorStream)
-                    Log.e("Response $myUrl: ", rString)
+                    Log.e(com.adapty.api.TAG, "Response $myUrl: $rString")
                     fail("Request is unsuccessful. Response Code: $response", reqID, adaptyCallback)
                     return@Runnable
                 }
@@ -166,7 +168,7 @@ class ApiClient(private var context: Context) {
             }
             mainHandler.post(myRunnable)
         } catch (e: Exception) {
-            Log.e("$TAG success", e.localizedMessage)
+            Log.e("${com.adapty.api.TAG} success", e.localizedMessage)
         }
     }
 
@@ -193,7 +195,7 @@ class ApiClient(private var context: Context) {
             }
             mainHandlerE.post(myRunnableE)
         } catch (e: Exception) {
-            Log.e("$TAG fail", e.localizedMessage)
+            Log.e("${com.adapty.api.TAG} fail", e.localizedMessage)
         }
     }
 

@@ -21,14 +21,15 @@ object UUIDTimeBased {
                 val address = InetAddress.getLocalHost()
                 val ni = NetworkInterface.getByInetAddress(address)
                 if (ni != null) {
-                    val mac = ni.hardwareAddress
+                    val mac = ni.hardwareAddress ?: return macAddressAsLong
+
                     random.nextBytes(mac)
-                    if (mac != null) {
-                        for (i in mac.indices) {
-                            macAddressAsLong = macAddressAsLong shl 8
-                            macAddressAsLong = macAddressAsLong xor (mac[i].toLong() and 0xFF)
-                        }
+
+                    for (i in mac.indices) {
+                        macAddressAsLong = macAddressAsLong shl 8
+                        macAddressAsLong = macAddressAsLong xor (mac[i].toLong() and 0xFF)
                     }
+
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -38,7 +39,8 @@ object UUIDTimeBased {
         }
 
     fun generateId(): UUID {
-        return generateIdFromTimestamp(System.currentTimeMillis())
+        return UUID.randomUUID()
+//        return generateIdFromTimestamp(System.currentTimeMillis())
     }
 
     private fun generateIdFromTimestamp(currentTimeMillis: Long): UUID {

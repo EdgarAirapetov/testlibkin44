@@ -2,7 +2,6 @@ package com.adapty.purchase
 
 import android.app.Activity
 import com.adapty.Adapty
-import com.adapty.R
 import com.adapty.api.AdaptyCallback
 import com.adapty.api.AdaptyPurchaseCallback
 import com.adapty.api.AdaptyRestoreCallback
@@ -11,7 +10,6 @@ import com.adapty.api.entity.restore.RestoreItem
 import com.adapty.api.responses.RestoreReceiptResponse
 import com.adapty.api.responses.ValidateReceiptResponse
 import com.android.billingclient.api.*
-import java.util.concurrent.TimeUnit
 
 class InAppPurchases(
     var activity: Activity,
@@ -28,19 +26,45 @@ class InAppPurchases(
         setupBilling(chosenPurchase)
     }
 
-    fun setupBilling(chosenPurchase: String) {
+    private fun setupBilling(chosenPurchase: String) {
         if (!::billingClient.isInitialized) {
             billingClient =
                 BillingClient.newBuilder(activity).enablePendingPurchases()
                     .setListener { billingResult, purchases ->
                         if (billingResult?.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
                             for (purchase in purchases) {
-                                Adapty.validateReceipt(
-                                    purchaseType,
-                                    purchase.sku,
-                                    purchase.purchaseToken
-                                ) { response, error ->
-                                    success(purchase, response, error)
+
+                                if (purchaseType == SUBS) {
+                                    val acknowledgePurchaseParams =
+                                        AcknowledgePurchaseParams.newBuilder()
+                                            .setPurchaseToken(purchase.purchaseToken)
+                                            .build()
+                                    billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingRes ->
+
+                                        Adapty.validatePurchase(
+                                            purchaseType,
+                                            purchase.sku,
+                                            purchase.purchaseToken
+                                        ) { response, error ->
+                                            success(purchase, response, error)
+                                        }
+                                    }
+                                } else {
+                                    val consumeParams = ConsumeParams.newBuilder()
+                                        .setPurchaseToken(purchase.purchaseToken)
+                                        .build()
+
+                                    billingClient.consumeAsync(
+                                        consumeParams
+                                    ) { p0, p1 ->
+                                        Adapty.validatePurchase(
+                                            purchaseType,
+                                            purchase.sku,
+                                            purchase.purchaseToken
+                                        ) { response, error ->
+                                            success(purchase, response, error)
+                                        }
+                                    }
                                 }
                             }
                         } else if (billingResult?.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
