@@ -1,5 +1,8 @@
 package com.adapty.api
 
+import com.adapty.api.entity.containers.DataContainer
+import com.adapty.api.entity.containers.ProductContainer
+import com.adapty.api.entity.purchaserInfo.AttributePurchaserInfoRes
 import com.adapty.api.responses.RestoreReceiptResponse
 import com.adapty.api.responses.ValidateReceiptResponse
 import com.android.billingclient.api.Purchase
@@ -38,3 +41,27 @@ interface AdaptyValidateCallback : AdaptyCallback {
     fun onResult(response: ValidateReceiptResponse?, error: String?)
 
 }
+
+interface AdaptyPurchaserInfoCallback : AdaptyCallback {
+
+    fun onResult(response: AttributePurchaserInfoRes?, error: String?)
+
+}
+
+interface AdaptyPurchaseContainersCallback : AdaptyCallback {
+
+    fun onResult(containers: ArrayList<DataContainer>, products: ArrayList<ProductContainer>, error: String?)
+
+}
+
+
+
+
+
+
+
+
+
+
+
+

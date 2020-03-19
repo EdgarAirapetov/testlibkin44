@@ -3,6 +3,9 @@ package com.adapty
 import android.app.Activity
 import android.content.Context
 import com.adapty.api.*
+import com.adapty.api.entity.containers.DataContainer
+import com.adapty.api.entity.containers.ProductContainer
+import com.adapty.api.entity.purchaserInfo.AttributePurchaserInfoRes
 import com.adapty.api.entity.restore.RestoreItem
 import com.adapty.utils.PreferenceManager
 import com.adapty.api.responses.CreateProfileResponse
@@ -20,10 +23,10 @@ class Adapty {
         lateinit var applicationContext: Context
         lateinit var preferenceManager: PreferenceManager
 
-        fun activate(applicationContext: Context, appKey: String) =
-            activate(applicationContext, appKey, null)
+        fun activate(applicationContext: Context, appKey: String, adaptyCallback: (String?) -> Unit) =
+            activate(applicationContext, appKey, null, adaptyCallback)
 
-        fun activate(applicationContext: Context, appKey: String, customerUserId: String?) {
+        fun activate(applicationContext: Context, appKey: String, customerUserId: String?, adaptyCallback: (String?) -> Unit) {
             this.applicationContext = applicationContext
             this.preferenceManager = PreferenceManager(applicationContext)
             this.preferenceManager.appKey = appKey
@@ -40,11 +43,13 @@ class Adapty {
                             }
                         }
 
+                        adaptyCallback.invoke(null)
+
                         sendSyncMetaInstallRequest()
                     }
 
                     override fun fail(msg: String, reqID: Int) {
-
+                        adaptyCallback.invoke(msg)
                     }
 
                 })
@@ -125,6 +130,35 @@ class Adapty {
 
         }
 
+        fun getPurchaserInfo(
+            adaptyCallback: (AttributePurchaserInfoRes?, String?) -> Unit
+        ) {
+            ApiClientRepository.getInstance(preferenceManager).getProfile(
+                object : AdaptyPurchaserInfoCallback {
+                    override fun onResult(response: AttributePurchaserInfoRes?, error: String?) {
+                        adaptyCallback.invoke(response, error)
+                    }
+                }
+            )
+        }
+
+        fun getPurchaseContainers(
+            adaptyCallback: (containers: ArrayList<DataContainer>, products: ArrayList<ProductContainer>, error: String?) -> Unit
+        ) {
+            ApiClientRepository.getInstance(preferenceManager).getPurchaseContainers(
+                object : AdaptyPurchaseContainersCallback {
+                    override fun onResult(
+                        containers: ArrayList<DataContainer>,
+                        products: ArrayList<ProductContainer>,
+                        error: String?
+                    ) {
+                        adaptyCallback.invoke(containers, products, error)
+                    }
+
+                }
+            )
+        }
+
         fun makePurchase(
             activity: Activity,
             type: String,
@@ -142,7 +176,7 @@ class Adapty {
             })
         }
 
-        fun restorePurchases (
+        fun restorePurchases(
             activity: Activity,
             adaptyCallback: (RestoreReceiptResponse?, String?) -> Unit
         ) {
@@ -189,9 +223,9 @@ class Adapty {
             preferenceManager.installationMetaID = ""
             preferenceManager.profileID = ""
 
-            adaptyCallback.invoke(null)
+//            adaptyCallback.invoke(null)
 
-            activate(applicationContext, preferenceManager.appKey)
+            activate(applicationContext, preferenceManager.appKey, adaptyCallback)
         }
     }
 }

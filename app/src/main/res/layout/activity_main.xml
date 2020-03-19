@@ -1,126 +1,186 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/errorsTv"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="No Errors" />
-
-    <Button
-        android:id="@+id/makePurchase"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Make Purchases"
-        />
-
-    <Button
-        android:id="@+id/validateReceipt"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Validate Receipt"/>
-
-    <Button
-        android:id="@+id/restore"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Restore"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tv1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginBottom="10sp"
-        android:text="Prepared Subscription"/>
-
-    <RadioGroup
-        android:id="@+id/radioSubs"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content">
-
-        <RadioButton
-            android:id="@+id/first_subs"
-            android:text="adapty_test_1"
+        <EditText
+            android:id="@+id/product_et"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="20dp"
+            android:hint="product_id" />
 
-        <RadioButton
-            android:id="@+id/second_subs"
-            android:text="adapty_test_2"
+        <TextView
+            android:id="@+id/descTv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="10dp"
+            android:gravity="center"
+            android:text="Input product_id and choose type of purchase\nor choose from prepared one"
+            android:textColor="@android:color/black"
+            android:textStyle="bold" />
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
 
-    </RadioGroup>
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10sp"
-        android:layout_marginStart="10dp"
-        android:text="Type of Purchase"/>
+                <TextView
+                    android:id="@+id/tv1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginBottom="10sp"
+                    android:text="Prepared Subscription" />
 
-    <RadioGroup
-        android:id="@+id/radioType"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content">
+                <RadioGroup
+                    android:id="@+id/radioSubs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp">
 
-        <RadioButton
-            android:id="@+id/type_subs"
-            android:text="Subscription"
+                    <RadioButton
+                        android:id="@+id/first_subs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="adapty_test_1" />
+
+                    <RadioButton
+                        android:id="@+id/second_subs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="adapty_test_2" />
+
+                </RadioGroup>
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginBottom="10sp"
+                    android:text="Type of Purchase" />
+
+                <RadioGroup
+                    android:id="@+id/radioType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp">
+
+                    <RadioButton
+                        android:id="@+id/type_subs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Subscription" />
+
+                    <RadioButton
+                        android:id="@+id/type_in_app"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="InApp" />
+
+                </RadioGroup>
+            </FrameLayout>
+        </LinearLayout>
+
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
 
-        <RadioButton
-            android:id="@+id/type_in_app"
-            android:text="InApp"
+            <Button
+                android:id="@+id/makePurchase"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Make Purchases" />
+
+            <Button
+                android:id="@+id/validateReceipt"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Validate Receipt" />
+
+            <Button
+                android:id="@+id/restore"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Restore Purchases" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-    </RadioGroup>
+            <Button
+                android:id="@+id/purchaser_info"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Purchaser Info" />
 
-    <TextView
-        android:id="@+id/receipt_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Current PURCHASE TOKEN:"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:gravity="center"
-        android:padding="20dp"/>
-
-    <EditText
-        android:id="@+id/receipt_et"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:hint=""
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"/>
-
-    <EditText
-        android:id="@+id/product_et"
-        android:layout_width="match_parent"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="20dp"
-        android:layout_height="wrap_content"
-        android:hint="product_id"
-        />
-
-    <TextView
-        android:id="@+id/descTv"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:textColor="@android:color/black"
-        android:text="Input product_id and choose type of purchase\nor choose from prepared one"/>
+            <Button
+                android:id="@+id/containers_get"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="GET CONTAINERS" />
+        </LinearLayout>
 
 
-</LinearLayout>
+
+        <TextView
+            android:id="@+id/errorsTv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="No Errors"
+            android:layout_marginTop="16dp"/>
+
+        <TextView
+            android:id="@+id/receipt_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="20dp"
+            android:text="Current PURCHASE TOKEN:"
+            android:textColor="@android:color/black"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/receipt_et"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:hint=""
+            android:padding="10dp" />
+
+
+    </LinearLayout>
+</ScrollView>

@@ -1,14 +1,18 @@
 package com.adaptytest
 
+import android.app.ProgressDialog
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.widget.Toast
 import com.adapty.Adapty
+import com.adapty.api.requests.CreateProfileRequest
 import com.adapty.api.responses.ValidateReceiptResponse
 import com.adapty.purchase.INAPP
 import com.adapty.purchase.SUBS
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_response.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -16,13 +20,23 @@ class MainActivity : AppCompatActivity() {
     val secondSubs = "adapty_test_2"
     private var selectedSubs = firstSubs
     private var purchaseType = SUBS
+    private var progressDialog: ProgressDialog? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Adapty.activate(applicationContext, "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU", null)
+        progressDialog = ProgressDialog(this)
+
+        progressDialog?.show()
+
+        Adapty.activate(applicationContext, "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU", null) {error ->
+            progressDialog?.dismiss()
+
+            if (error != null)
+                errorsTv.text = error
+        }
 
         radioType.setOnCheckedChangeListener { radioGroup, checkedId ->
             purchaseType = when (checkedId) {
@@ -87,14 +101,34 @@ class MainActivity : AppCompatActivity() {
         }
 
         restore.setOnClickListener {
-            Adapty.restore(this) { response, error ->
+            Adapty.restorePurchases(this) { response, error ->
                 if (error == null) {
                     errorsTv.text = "Success"
                     Toast.makeText(this, Gson().toJson(response), Toast.LENGTH_LONG).show()
-                    return@restore
+                    return@restorePurchases
                 }
 
                 errorsTv.text = error
+            }
+        }
+
+        purchaser_info.setOnClickListener {
+            Adapty.getPurchaserInfo { purchaserInfo, error ->
+                purchaserInfo?.let {
+                    errorsTv.text = "Success"
+                    ResponseActivity.openResponseActivity(this, Gson().toJson(it))
+                } ?: kotlin.run {
+                    errorsTv.text = error ?: "Empty response attributes"
+                }
+            }
+        }
+
+        containers_get.setOnClickListener {
+            Adapty.getPurchaseContainers { containers, products, error ->
+                if (error == null) {
+                    ResponseContainersActivity.openResponseActivity(this, containers, products, "")
+                } else
+                    errorsTv.text = error
             }
         }
     }
