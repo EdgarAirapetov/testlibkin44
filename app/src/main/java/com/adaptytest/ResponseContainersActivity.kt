@@ -5,12 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.adapty.api.entity.containers.DataContainer
-import com.adapty.api.entity.containers.ProductContainer
-import com.adapty.api.responses.PurchaseContainersResponse
+import com.adapty.api.entity.containers.Product
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlinx.android.synthetic.main.activity_response.*
-import kotlinx.android.synthetic.main.activity_response.response
 import kotlinx.android.synthetic.main.activity_response_containers.*
 import java.lang.Exception
 
@@ -22,7 +19,7 @@ class ResponseContainersActivity : AppCompatActivity() {
         const val CONTAINERS = "CONTAINERS"
         const val PRODUCTS = "PRODUCTS"
 
-        fun openResponseActivity(context: Context, containers: ArrayList<DataContainer>, products: ArrayList<ProductContainer>, error: String) {
+        fun openResponseActivity(context: Context, containers: ArrayList<DataContainer>, products: ArrayList<Product>, error: String) {
             val intent = Intent(context, ResponseContainersActivity::class.java)
             intent.putExtra(CONTAINERS, Gson().toJson(containers))
             intent.putExtra(PRODUCTS, Gson().toJson(products))
@@ -62,12 +59,12 @@ class ResponseContainersActivity : AppCompatActivity() {
             }
 
             try {
-                val myType2 = object : TypeToken<ArrayList<ProductContainer>>() {}.type
+                val myType2 = object : TypeToken<ArrayList<Product>>() {}.type
                 val products =
-                    Gson().fromJson<ArrayList<ProductContainer>>(it.getString(PRODUCTS), myType2)
+                    Gson().fromJson<ArrayList<Product>>(it.getString(PRODUCTS), myType2)
 
                 products.first().apply {
-                    productTitleTv.text = title
+                    productTitleTv.text = localizedTitle
                     vendorProductIdTv.text = vendorProductId
                 }
 

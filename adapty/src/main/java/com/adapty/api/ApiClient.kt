@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import com.adapty.api.requests.*
 import com.adapty.api.responses.*
+import com.adapty.utils.ADAPTY_SDK_VERSION_INT
 import com.adapty.utils.PreferenceManager
 import com.google.gson.Gson
 import java.io.*
@@ -16,6 +17,7 @@ import java.net.URL
 const val AUTHORIZATION_KEY = "Authorization"
 const val API_KEY_PREFIX = "Api-Key "
 const val TAG = "[Adapty]"
+const val TIMEOUT = 30 * 1000
 
 class ApiClient(private var context: Context) {
 
@@ -80,14 +82,16 @@ class ApiClient(private var context: Context) {
 
                 val conn = myUrl.openConnection() as HttpURLConnection
 
-                conn.readTimeout = 10000 * 6
-                conn.connectTimeout = 15000 * 4
+                conn.readTimeout = TIMEOUT
+                conn.connectTimeout = TIMEOUT
                 conn.requestMethod = type
 
                 conn.setRequestProperty("Content-type", "application/vnd.api+json")
 
                 conn.setRequestProperty("ADAPTY-SDK-PROFILE-ID", preferenceManager.profileID)
                 conn.setRequestProperty("ADAPTY-SDK-PLATFORM", "Android")
+                conn.setRequestProperty("ADAPTY-SDK-VERSION", com.adapty.BuildConfig.VERSION_NAME)
+                conn.setRequestProperty("ADAPTY-SDK-VERSION-BUILD", ADAPTY_SDK_VERSION_INT.toString())
                 conn.setRequestProperty(AUTHORIZATION_KEY, API_KEY_PREFIX.plus(preferenceManager.appKey))
 
                 conn.doInput = true
@@ -121,7 +125,7 @@ class ApiClient(private var context: Context) {
                 } else {
                     rString = toStringUtf8(conn.errorStream)
                     Log.e(com.adapty.api.TAG, "Response $myUrl: $rString")
-                    fail("Request is unsuccessful. Response Code: $response", reqID, adaptyCallback)
+                    fail("Request is unsuccessful. Response Code: $response, Message: $rString", reqID, adaptyCallback)
                     return@Runnable
                 }
             } catch (e: Exception) {
@@ -257,7 +261,7 @@ class ApiClient(private var context: Context) {
             RESTORE_PURCHASE_REQ_ID ->
                 serverUrl + "sdk/in-apps/google/token/restore/"
             GET_CONTAINERS_REQ_ID ->
-                serverUrl + "sdk/in-apps/purchase-containers/"
+                serverUrl + "sdk/in-apps/purchase-containers/?profile_id=" + preferenceManager.profileID
             else -> serverUrl
         }
     }

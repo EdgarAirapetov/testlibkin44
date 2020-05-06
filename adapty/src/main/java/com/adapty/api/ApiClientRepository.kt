@@ -1,13 +1,18 @@
 package com.adapty.api
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageInfo
 import android.os.AsyncTask
-import android.util.Log
-import com.adapty.Adapty.Companion.applicationContext
+import android.os.Build
+import com.adapty.Adapty
+import com.adapty.Adapty.Companion.activity
 import com.adapty.api.entity.BaseData
+import com.adapty.api.entity.containers.Product
 import com.adapty.api.entity.profile.AttributeProfileReq
 import com.adapty.api.entity.profile.DataProfileReq
 import com.adapty.api.entity.restore.RestoreItem
+import com.adapty.api.entity.syncmeta.AttributeSyncMetaReq
 import com.adapty.api.entity.syncmeta.DataSyncMetaReq
 import com.adapty.api.entity.validate.AttributeRestoreReceiptReq
 import com.adapty.api.entity.validate.AttributeValidateReceiptReq
@@ -15,25 +20,22 @@ import com.adapty.api.entity.validate.DataRestoreReceiptReq
 import com.adapty.api.entity.validate.DataValidateReceiptReq
 import com.adapty.api.requests.*
 import com.adapty.purchase.SUBS
-import com.adapty.utils.PreferenceManager
-import com.adapty.utils.UUIDTimeBased
+import com.adapty.utils.*
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
-import com.google.common.util.concurrent.FutureCallback
-import com.google.common.util.concurrent.Futures.addCallback
-import java.io.IOException
-import java.lang.Exception
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
+import java.time.ZoneId
+import java.util.*
+import kotlin.collections.ArrayList
+
 
 class ApiClientRepository(var preferenceManager: PreferenceManager) {
 
-    private var apiClient = ApiClient(applicationContext)
+    private var apiClient = ApiClient(activity)
 
     fun createProfile(customerUserId: String?, adaptyCallback: AdaptyCallback) {
 
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
-            uuid = UUIDTimeBased.generateId().toString()
+            uuid = generateUuid().toString()
             preferenceManager.profileID = uuid
             preferenceManager.installationMetaID = uuid
         }
@@ -47,29 +49,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
             profileRequest.data?.attributes?.customerUserId = customerUserId
         }
 
-        val task: AsyncTask<Void?, Void?, String?> =
-            @SuppressLint("StaticFieldLeak")
-            object : AsyncTask<Void?, Void?, String?>() {
-
-                override fun doInBackground(vararg params: Void?): String? {
-                    var idInfo: AdvertisingIdClient.Info? = null
-                    var advertId: String? = null
-                    try {
-                        idInfo = AdvertisingIdClient.getAdvertisingIdInfo(applicationContext)
-                        advertId = idInfo!!.id
-                    } catch (e: Exception) { }
-
-                    return advertId
-                }
-
-                override fun onPostExecute(advertId: String?) {
-                    if (advertId != null) {
-                        profileRequest.data?.attributes?.advertisingId = advertId
-                    }
-                    apiClient.createProfile(profileRequest, adaptyCallback)
-                }
-            }
-        task.execute()
+        apiClient.createProfile(profileRequest, adaptyCallback)
     }
 
     fun updateProfile(
@@ -79,6 +59,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         facebookUserId: String?,
         mixpanelUserId: String?,
         amplitudeUserId: String?,
+        appsflyerId: String?,
         firstName: String?,
         lastName: String?,
         gender: String?,
@@ -88,7 +69,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
 
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
-            uuid = UUIDTimeBased.generateId().toString()
+            uuid = generateUuid().toString()
             preferenceManager.profileID = uuid
         }
 
@@ -104,35 +85,14 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
             this.facebookUserId = facebookUserId
             this.mixpanelUserId = mixpanelUserId
             this.amplitudeUserId = amplitudeUserId
+            this.appsflyerId = appsflyerId
             this.firstName = firstName
             this.lastName = lastName
             this.gender = gender
             this.birthday = birthday
         }
 
-        val task: AsyncTask<Void?, Void?, String?> =
-            @SuppressLint("StaticFieldLeak")
-            object : AsyncTask<Void?, Void?, String?>() {
-
-                override fun doInBackground(vararg params: Void?): String? {
-                    var idInfo: AdvertisingIdClient.Info? = null
-                    var advertId: String? = null
-                    try {
-                        idInfo = AdvertisingIdClient.getAdvertisingIdInfo(applicationContext)
-                        advertId = idInfo!!.id
-                    } catch (e: Exception) { }
-
-                    return advertId
-                }
-
-                override fun onPostExecute(advertId: String?) {
-                    if (advertId != null) {
-                        profileRequest.data?.attributes?.advertisingId = advertId
-                    }
-                    apiClient.updateProfile(profileRequest, adaptyCallback)
-                }
-            }
-        task.execute()
+        apiClient.updateProfile(profileRequest, adaptyCallback)
     }
 
     fun getProfile(
@@ -140,7 +100,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
     ) {
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
-            uuid = UUIDTimeBased.generateId().toString()
+            uuid = generateUuid().toString()
             preferenceManager.profileID = uuid
         }
 
@@ -156,7 +116,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
     ) {
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
-            uuid = UUIDTimeBased.generateId().toString()
+            uuid = generateUuid().toString()
             preferenceManager.profileID = uuid
         }
 
@@ -167,11 +127,11 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         apiClient.getPurchaseContainers(request, adaptyCallback)
     }
 
-    fun syncMetaInstall(adaptyCallback: AdaptyCallback? = null) {
+    fun syncMetaInstall(applicationContext: Context, adaptyCallback: AdaptyCallback? = null) {
 
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
-            uuid = UUIDTimeBased.generateId().toString()
+            uuid = generateUuid().toString()
             preferenceManager.profileID = uuid
             preferenceManager.installationMetaID = uuid
         }
@@ -180,19 +140,70 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         syncMetaRequest.data = DataSyncMetaReq()
         syncMetaRequest.data?.id = uuid
         syncMetaRequest.data?.type = "adapty_analytics_profile_installation_meta"
+        syncMetaRequest.data?.attributes = AttributeSyncMetaReq()
+        syncMetaRequest.data?.attributes?.apply {
+            adaptySdkVersion = com.adapty.BuildConfig.VERSION_NAME
+            adaptySdkVersionBuild = ADAPTY_SDK_VERSION_INT
+            try {
+                applicationContext.applicationContext?.let { ctx ->
+                    val mainPackageName = applicationContext.applicationContext?.packageName
+                    val packageInfo: PackageInfo =
+                        ctx.packageManager.getPackageInfo(mainPackageName, 0)
+                    val versionCode: Long =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            packageInfo.longVersionCode
+                        } else {
+                            packageInfo.versionCode.toLong()
+                        }
+                    appBuild = versionCode.toString()
+                    appVersion = packageInfo.versionName
+                }
+            } catch (e : java.lang.Exception) { }
 
-        apiClient.syncMeta(syncMetaRequest, adaptyCallback)
+            device = getDeviceName()
+            locale = Locale.getDefault().toLanguageTag()
+            os = getDeviceOsVersion()
+            platform = "Android"
+            timezone = TimeZone.getDefault().id
+        }
+
+        val task: AsyncTask<Void?, Void?, String?> =
+            @SuppressLint("StaticFieldLeak")
+            object : AsyncTask<Void?, Void?, String?>() {
+
+                override fun doInBackground(vararg params: Void?): String? {
+                    var idInfo: AdvertisingIdClient.Info? = null
+                    var advertId: String? = null
+                    try {
+                        idInfo = AdvertisingIdClient.getAdvertisingIdInfo(activity)
+                        advertId = idInfo!!.id
+                    } catch (e: Exception) { }
+
+                    return advertId
+                }
+
+                override fun onPostExecute(advertId: String?) {
+                    if (advertId != null) {
+                        syncMetaRequest.data?.attributes?.advertisingId = advertId
+                    }
+                    apiClient.syncMeta(syncMetaRequest, adaptyCallback)
+                }
+            }
+        task.execute()
+
     }
 
     fun validatePurchase(
         purchaseType: String,
         productId: String,
         purchaseToken: String,
+        purchaseOrderId: String?,
+        product: Product?,
         adaptyCallback: AdaptyCallback? = null
     ) {
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
-            uuid = UUIDTimeBased.generateId().toString()
+            uuid = generateUuid().toString()
             preferenceManager.profileID = uuid
             preferenceManager.installationMetaID = uuid
         }
@@ -202,10 +213,26 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         validateReceiptRequest.data?.id = uuid
         validateReceiptRequest.data?.type = "google_receipt_validation_result"
         validateReceiptRequest.data?.attributes = AttributeValidateReceiptReq()
-        validateReceiptRequest.data?.attributes?.productId = productId
-        validateReceiptRequest.data?.attributes?.purchaseToken = purchaseToken
-        validateReceiptRequest.data?.attributes?.profileId = uuid
-        validateReceiptRequest.data?.attributes?.isSubscription = (purchaseType == SUBS)
+        validateReceiptRequest.data?.attributes?.apply {
+            profileId = uuid
+            this.productId = productId
+            this.purchaseToken = purchaseToken
+            isSubscription = (purchaseType == SUBS)
+
+            purchaseOrderId?.let {
+                transactionId = it
+            }
+
+            product?.let { p ->
+                variationId = p.variationId
+                priceLocale = p.currencyCode
+                originalPrice = p.price
+//                discountPrice = p.discountPrice
+//                transactionId = p.transactionId
+//                storeCountry
+            }
+        }
+
 
         apiClient.validatePurchase(validateReceiptRequest, adaptyCallback)
     }
@@ -213,7 +240,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
     fun restore(purchases: ArrayList<RestoreItem>, adaptyCallback: AdaptyCallback? = null) {
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
-            uuid = UUIDTimeBased.generateId().toString()
+            uuid = generateUuid().toString()
             preferenceManager.profileID = uuid
             preferenceManager.installationMetaID = uuid
         }

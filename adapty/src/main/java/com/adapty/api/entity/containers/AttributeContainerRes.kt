@@ -1,7 +1,6 @@
 package com.adapty.api.entity.containers
 
 import com.google.gson.annotations.SerializedName
-import java.util.*
 import kotlin.collections.ArrayList
 
 class AttributeContainerRes {
@@ -18,5 +17,5 @@ class AttributeContainerRes {
     var variationId: String? = null
 
     @SerializedName("products")
-    var products: ArrayList<ProductContainer>? = null
+    var products: ArrayList<Product>? = null
 }
