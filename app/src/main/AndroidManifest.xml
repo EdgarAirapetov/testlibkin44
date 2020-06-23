@@ -8,6 +8,7 @@
 
     <application
         android:allowBackup="false"
+        android:name=".App"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -21,14 +22,33 @@
             android:screenOrientation="portrait"
             />
         <activity android:name=".MainActivity"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <data android:scheme="adaptyexample" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+            </intent-filter>
+
+
         </activity>
+        <meta-data android:name="io.branch.sdk.TestMode" android:value="false" />
+        <meta-data android:name="io.branch.sdk.BranchKey" android:value="key_live_deRVdIGLVPBYXscrG9Ev4kjbAwgjFfSF" />
+        <meta-data android:name="io.branch.sdk.BranchKey.test" android:value="key_test_laQLhSRPHSz91FhtLXxZ0hfaDrihtoNG" />
+
         <activity android:name=".ContainersActivity" />
+
+        <receiver android:name="com.appsflyer.SingleInstallBroadcastReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.vending.INSTALL_REFERRER" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

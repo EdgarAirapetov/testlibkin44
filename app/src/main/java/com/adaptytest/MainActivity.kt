@@ -2,14 +2,25 @@ package com.adaptytest
 
 import android.app.ProgressDialog
 import android.os.Bundle
+import android.os.Looper
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.widget.Toast
 import com.adapty.Adapty
+import com.adapty.api.AttributionType
 import com.adapty.api.entity.purchaserInfo.OnPurchaserInfoUpdatedListener
 import com.adapty.api.entity.purchaserInfo.model.PurchaserInfoModel
 import com.adapty.purchase.SUBS
 import com.google.gson.Gson
+import io.branch.referral.Branch
+import io.branch.referral.Branch.BranchReferralInitListener
+import io.reactivex.Observable
+import io.reactivex.Scheduler
+import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,25 +37,20 @@ class MainActivity : AppCompatActivity() {
 
         progressDialog = ProgressDialog(this)
 
-        progressDialog?.show()
+//        progressDialog?.show()
 
-        Adapty.activate(
-            this,
-            "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU",
-            null
-        ) { error ->
-            progressDialog?.dismiss()
+        profile_id_tv.text = Adapty.getProfileId()
+//        { error ->
+//            progressDialog?.dismiss()
+//
+//            profile_id_tv.text = Adapty.getProfileId()
+//
+//            if (error != null)
+//                errorsTv.text = error
+//        }
 
-            profile_id_tv.text = Adapty.getProfileId()
-
-            if (error != null)
-                errorsTv.text = error
-        }
-
-        Adapty.getPurchaserInfo { purchaserInfo, state, error ->  }
-        Adapty.restorePurchases(this) {_, _ ->}
-        Adapty.logout {  }
-//        Adapty.getPurchaseContainers(this) {_, _, _, _ -> }
+//        Adapty.syncPurchases {error ->
+//        }
 
         Adapty.setOnPurchaserInfoUpdatedListener(object : OnPurchaserInfoUpdatedListener {
             override fun didReceiveUpdatedPurchaserInfo(purchaserInfo: PurchaserInfoModel) {
@@ -69,16 +75,50 @@ class MainActivity : AppCompatActivity() {
         }
 
         purchaser_info.setOnClickListener {
-            progressDialog?.show()
-            Adapty.getPurchaserInfo { purchaserInfo, state, error ->
-                progressDialog?.dismiss()
-                profile_id_tv.text = Adapty.getProfileId()
-                purchaserInfo?.let {
-                    errorsTv.text = "state: $state \n ${Gson().toJson(it)}"
-                } ?: kotlin.run {
-                    errorsTv.text = error ?: "Empty response attributes"
-                }
-            }
+//            progressDialog?.show()
+            val curLoop = Looper.myLooper()
+            Observable.fromCallable {
+                (Adapty.getPurchaserInfo { purchaserInfo, state, error ->
+//                    progressDialog?.dismiss()
+//                    profile_id_tv.text = Adapty.getProfileId()
+                    purchaserInfo?.let {
+//                        errorsTv.text = "state: $state \n ${Gson().toJson(it)}"
+                        Log.e("Successful response", "state: $state \n ${Gson().toJson(it)}")
+                    } ?: kotlin.run {
+//                        errorsTv.text = error ?: "Empty response attributes"
+                        Log.e("onSuccess", error ?: "Empty response attributes")
+                    }
+                })
+            }.subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.computation())
+                .subscribe({
+                    Log.e("onSuccess", "success")
+                }, { t ->
+                    Log.e("onError", t.message)
+                })
+
+//                }
+
+//                Single
+//                    .create<PurchaserInfoModel> { emitter ->
+//                        Adapty.getPurchaserInfo { purchaserInfo, state, error ->
+//                            if (error.isNullOrBlank()) {
+//                                if (!emitter.isDisposed) {
+//                                    purchaserInfo?.let(emitter::onSuccess) ?: emitter.onError(Exception())
+//                                }
+//                            } else {
+//                                if (!emitter.isDisposed) {
+//                                    emitter.onError(Exception())
+//                                }
+//                            }
+//                        }
+//                    }
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe{p ->
+//                        Log.e("", "")
+//                    }// Adapty callbacks are called on the main thread
+
+
         }
 
         containers_get_cached.setOnClickListener {
@@ -126,7 +166,7 @@ class MainActivity : AppCompatActivity() {
                 profile_id_tv.text = Adapty.getProfileId()
 //                errorsTv.text = error ?: "Successfully identified user"
 
-                Adapty.getPurchaserInfo()?.let {
+                Adapty.getPurchaserInfo1()?.let {
                     errorsTv.text =
                         error ?: "Successfully identified user\n\n ${Gson().toJson(it)}"
                 } ?: kotlin.run {
@@ -140,7 +180,7 @@ class MainActivity : AppCompatActivity() {
             Adapty.logout { error ->
                 progressDialog?.dismiss()
                 profile_id_tv.text = Adapty.getProfileId()
-                Adapty.getPurchaserInfo()?.let {
+                Adapty.getPurchaserInfo1()?.let {
                     errorsTv.text = error ?: "Successfully log out\n\n ${Gson().toJson(it)}"
                 } ?: kotlin.run {
                     errorsTv.text = error ?: "Successfully log out"
@@ -148,5 +188,26 @@ class MainActivity : AppCompatActivity() {
 
             }
         }
+
+        update_adjust.setOnClickListener {
+            val hm = HashMap<String, Any>()
+            hm["parameter1"] = "value"
+            hm["parameter2"] = true
+            Adapty.updateAttribution(hm, AttributionType.ADJUST)
+        }
     }
+
+    override fun onStart() {
+        super.onStart()
+        Branch.sessionBuilder(this).withCallback(branchReferralInitListener)
+            .withData(if (intent != null) intent.data else null).init()
+    }
+
+    private val branchReferralInitListener =
+        BranchReferralInitListener { linkProperties, error ->
+            linkProperties?.let {
+                Toast.makeText(this@MainActivity, it.toString(), Toast.LENGTH_LONG).show()
+//                Adapty.updateAttribution(it, AttributionType.BRANCH)
+            }
+        }
 }

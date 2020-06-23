@@ -30,6 +30,12 @@ interface AdaptyProfileCallback : AdaptyCallback {
 
 }
 
+interface AdaptyUpdateAttributionCallback : AdaptyCallback {
+
+    fun onResult(error: String?)
+
+}
+
 interface AdaptyRestoreCallback : AdaptyCallback {
 
     fun onResult(response: RestoreReceiptResponse?, error: String?)

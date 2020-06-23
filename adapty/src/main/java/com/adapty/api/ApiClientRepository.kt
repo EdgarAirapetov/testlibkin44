@@ -5,9 +5,13 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.os.AsyncTask
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import com.adapty.Adapty
-import com.adapty.Adapty.Companion.activity
+import com.adapty.Adapty.Companion.context
 import com.adapty.api.entity.BaseData
+import com.adapty.api.entity.attribution.AttributeUpdateAttributionReq
+import com.adapty.api.entity.attribution.DataUpdateAttributionReq
 import com.adapty.api.entity.containers.Product
 import com.adapty.api.entity.profile.AttributeProfileReq
 import com.adapty.api.entity.profile.DataProfileReq
@@ -22,16 +26,20 @@ import com.adapty.api.requests.*
 import com.adapty.purchase.SUBS
 import com.adapty.utils.*
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import org.json.JSONObject
 import java.time.ZoneId
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 
 class ApiClientRepository(var preferenceManager: PreferenceManager) {
 
-    private var apiClient = ApiClient(activity)
+    private var apiClient = ApiClient(context)
 
-    fun createProfile(customerUserId: String?, adaptyCallback: AdaptyCallback) {
+    fun createProfile(customerUserId: String?, currentLooper: Handler?, adaptyCallback: AdaptyCallback) {
 
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
@@ -49,21 +57,21 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
             profileRequest.data?.attributes?.customerUserId = customerUserId
         }
 
-        apiClient.createProfile(profileRequest, adaptyCallback)
+        apiClient.createProfile(profileRequest, currentLooper, adaptyCallback)
     }
 
     fun updateProfile(
-        customerUserId: String?,
         email: String?,
         phoneNumber: String?,
         facebookUserId: String?,
         mixpanelUserId: String?,
         amplitudeUserId: String?,
-        appsflyerId: String?,
+        amplitudeDeviceId: String?,
         firstName: String?,
         lastName: String?,
         gender: String?,
         birthday: String?,
+        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback
     ) {
 
@@ -79,23 +87,23 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         profileRequest.data?.type = "adapty_analytics_profile"
         profileRequest.data?.attributes = AttributeProfileReq()
         profileRequest.data?.attributes?.apply {
-            this.customerUserId = customerUserId
             this.email = email
             this.phoneNumber = phoneNumber
             this.facebookUserId = facebookUserId
             this.mixpanelUserId = mixpanelUserId
             this.amplitudeUserId = amplitudeUserId
-            this.appsflyerId = appsflyerId
+            this.amplitudeDeviceId = amplitudeDeviceId
             this.firstName = firstName
             this.lastName = lastName
             this.gender = gender
             this.birthday = birthday
         }
 
-        apiClient.updateProfile(profileRequest, adaptyCallback)
+        apiClient.updateProfile(profileRequest, currentLooper, adaptyCallback)
     }
 
     fun getProfile(
+        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback
     ) {
         var uuid = preferenceManager.profileID
@@ -108,10 +116,11 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         purchaserInfoRequest.data = BaseData()
         purchaserInfoRequest.data?.id = uuid
 
-        apiClient.getProfile(purchaserInfoRequest, adaptyCallback)
+        apiClient.getProfile(purchaserInfoRequest, currentLooper, adaptyCallback)
     }
 
     fun getPurchaseContainers(
+        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback
     ) {
         var uuid = preferenceManager.profileID
@@ -124,10 +133,10 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         request.data = BaseData()
         request.data?.id = uuid
 
-        apiClient.getPurchaseContainers(request, adaptyCallback)
+        apiClient.getPurchaseContainers(request, currentLooper, adaptyCallback)
     }
 
-    fun syncMetaInstall(applicationContext: Context, adaptyCallback: AdaptyCallback? = null) {
+    fun syncMetaInstall(applicationContext: Context, currentLooper: Handler?, adaptyCallback: AdaptyCallback? = null) {
 
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
@@ -158,7 +167,8 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
                     appBuild = versionCode.toString()
                     appVersion = packageInfo.versionName
                 }
-            } catch (e : java.lang.Exception) { }
+            } catch (e: java.lang.Exception) {
+            }
 
             device = getDeviceName()
             locale = Locale.getDefault().toLanguageTag()
@@ -175,9 +185,10 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
                     var idInfo: AdvertisingIdClient.Info? = null
                     var advertId: String? = null
                     try {
-                        idInfo = AdvertisingIdClient.getAdvertisingIdInfo(activity)
+                        idInfo = AdvertisingIdClient.getAdvertisingIdInfo(context)
                         advertId = idInfo!!.id
-                    } catch (e: Exception) { }
+                    } catch (e: Exception) {
+                    }
 
                     return advertId
                 }
@@ -186,7 +197,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
                     if (advertId != null) {
                         syncMetaRequest.data?.attributes?.advertisingId = advertId
                     }
-                    apiClient.syncMeta(syncMetaRequest, adaptyCallback)
+                    apiClient.syncMeta(syncMetaRequest, currentLooper, adaptyCallback)
                 }
             }
         task.execute()
@@ -199,6 +210,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         purchaseToken: String,
         purchaseOrderId: String?,
         product: Product?,
+        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback? = null
     ) {
         var uuid = preferenceManager.profileID
@@ -234,10 +246,10 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         }
 
 
-        apiClient.validatePurchase(validateReceiptRequest, adaptyCallback)
+        apiClient.validatePurchase(validateReceiptRequest, currentLooper, adaptyCallback)
     }
 
-    fun restore(purchases: ArrayList<RestoreItem>, adaptyCallback: AdaptyCallback? = null) {
+    fun restore(purchases: ArrayList<RestoreItem>,currentLooper: Handler?,  adaptyCallback: AdaptyCallback? = null) {
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
             uuid = generateUuid().toString()
@@ -252,7 +264,43 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         restoreReceiptRequest.data?.attributes?.profileId = uuid
         restoreReceiptRequest.data?.attributes?.restoreItems = purchases
 
-        apiClient.restorePurchase(restoreReceiptRequest, adaptyCallback)
+        apiClient.restorePurchase(restoreReceiptRequest, currentLooper, adaptyCallback)
+    }
+
+    fun updateAttribution(
+        attribution: Any,
+        source: String,
+        networkUserId: String?,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback? = null
+    ) {
+        var uuid = preferenceManager.profileID
+        if (uuid.isEmpty()) {
+            uuid = generateUuid().toString()
+            preferenceManager.profileID = uuid
+            preferenceManager.installationMetaID = uuid
+        }
+
+        val updateAttributionRequest = UpdateAttributionRequest()
+        updateAttributionRequest.data = DataUpdateAttributionReq()
+        updateAttributionRequest.data?.type = "adapty_analytics_profile_attribution"
+        updateAttributionRequest.data?.attributes = AttributeUpdateAttributionReq()
+        updateAttributionRequest.data?.attributes?.source = source
+        if (attribution is JSONObject) {
+            val jo = HashMap<String, Any>()
+            for (a in attribution.keys()) {
+                jo[a] = attribution.get(a)
+            }
+            updateAttributionRequest.data?.attributes?.attribution = jo
+        } else
+            updateAttributionRequest.data?.attributes?.attribution = attribution
+        networkUserId?.let {
+            updateAttributionRequest.data?.attributes?.networkUserId = it
+        }
+
+
+
+        apiClient.updateAttribution(updateAttributionRequest, currentLooper, adaptyCallback)
     }
 
     companion object Factory {

@@ -1,23 +1,33 @@
 package com.adapty.purchase
 
 import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.adapty.Adapty
 import com.adapty.api.AdaptyCallback
 import com.adapty.api.AdaptyPurchaseCallback
 import com.adapty.api.AdaptyRestoreCallback
 import com.adapty.api.ApiClientRepository
+import com.adapty.api.entity.containers.DataContainer
 import com.adapty.api.entity.containers.Product
 import com.adapty.api.entity.restore.RestoreItem
 import com.adapty.api.responses.RestoreReceiptResponse
 import com.adapty.api.responses.ValidateReceiptResponse
+import com.adapty.utils.LogHelper
+import com.adapty.utils.PreferenceManager
 import com.android.billingclient.api.*
 
 class InAppPurchases(
-    var activity: Activity,
+    var context: Context,
+    var activity: Activity?,
     var isRestore: Boolean,
+    var isPeriodic: Boolean,
+    var preferenceManager: PreferenceManager,
     var product: Product,
     var variationId: String?,
     var apiClientRepository: ApiClientRepository?,
+    var currentLooper: Handler?,
     var adaptyCallback: AdaptyCallback
 ) {
 
@@ -31,7 +41,7 @@ class InAppPurchases(
     private fun setupBilling(chosenPurchase: String?) {
         if (!::billingClient.isInitialized) {
             billingClient =
-                BillingClient.newBuilder(activity).enablePendingPurchases()
+                BillingClient.newBuilder(context).enablePendingPurchases()
                     .setListener { billingResult, purchases ->
                         if (billingResult?.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
                             for (purchase in purchases) {
@@ -53,7 +63,8 @@ class InAppPurchases(
                                             purchase.sku,
                                             purchase.purchaseToken,
                                             purchase.orderId,
-                                            product
+                                            product,
+                                            currentLooper
                                         ) { response, error ->
                                             success(purchase, response, error)
                                         }
@@ -77,7 +88,8 @@ class InAppPurchases(
                                             purchase.sku,
                                             p1,
                                             purchase.orderId,
-                                            product
+                                            product,
+                                            currentLooper
                                         ) { response, error ->
                                             success(purchase, response, error)
                                         }
@@ -89,7 +101,7 @@ class InAppPurchases(
                         } else if (billingResult?.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
                             fail("Purchase: USER_CANCELED")
                         } else {
-                            fail("Purchase: ${billingResult?.responseCode.toString()}")
+                            fail("Purchase: ${billingResult?.responseCode.toString()}, ${billingResult.debugMessage}")
                         }
                     }
                     .build()
@@ -119,6 +131,8 @@ class InAppPurchases(
                                 purchaseType
                             )
                         }
+                    } else {
+                        fail(billingResult.debugMessage)
                     }
                 }
 
@@ -154,7 +168,7 @@ class InAppPurchases(
                         fail("This product_id not found with this purchase type")
                 }
             } else
-                fail("Unavailable")
+                fail(result.debugMessage)
         }
     }
 
@@ -176,21 +190,26 @@ class InAppPurchases(
                     if (type == INAPP) {
                         if (historyPurchases.isEmpty()) {
                             fail("You have no purchases")
-                        } else
-                            apiClientRepository?.restore(
-                                historyPurchases, object : AdaptyRestoreCallback {
-                                    override fun onResult(
-                                        response: RestoreReceiptResponse?,
-                                        error: String?
-                                    ) {
-                                        if (error == null) {
-                                            success(null, response, error)
-                                            return
-                                        }
-
-                                        fail(error)
-                                    }
-                                })
+                        } else {
+                            fillProductInfoFromCache()
+//                            if (isPeriodic) {
+                                checkPurchasesHistoryForSync(historyPurchases)
+//                            } else
+//                                apiClientRepository?.restore(
+//                                    historyPurchases, object : AdaptyRestoreCallback {
+//                                        override fun onResult(
+//                                            response: RestoreReceiptResponse?,
+//                                            error: String?
+//                                        ) {
+//                                            if (error == null) {
+//                                                success(null, response, error)
+//                                                return
+//                                            }
+//
+//                                            fail(error)
+//                                        }
+//                                    })
+                        }
                     } else
                         queryPurchaseHistory(INAPP)
                 } else {
@@ -207,48 +226,158 @@ class InAppPurchases(
                     else {
                         if (historyPurchases.isEmpty())
                             fail("You have no purchases")
-                        else
-                            apiClientRepository?.restore(
-                                historyPurchases, object : AdaptyRestoreCallback {
-                                    override fun onResult(
-                                        response: RestoreReceiptResponse?,
-                                        error: String?
-                                    ) {
-                                        if (error == null) {
-                                            success(null, response, error)
-                                            return
-                                        }
-
-                                        fail(error)
-                                    }
-                                })
+                        else {
+                            fillProductInfoFromCache()
+//                            if (isPeriodic) {
+                                checkPurchasesHistoryForSync(historyPurchases)
+//                            } else
+//                                apiClientRepository?.restore(
+//                                    historyPurchases, object : AdaptyRestoreCallback {
+//                                        override fun onResult(
+//                                            response: RestoreReceiptResponse?,
+//                                            error: String?
+//                                        ) {
+//                                            if (error == null) {
+//                                                success(null, response, error)
+//                                                return
+//                                            }
+//
+//                                            fail(error)
+//                                        }
+//                                    })
+                        }
                     }
                 }
             } else
-                fail("Unavailable")
+                fail(billingResult.debugMessage)
         }
     }
 
+    private fun fillProductInfoFromCache() {
+        for (i in 0 until historyPurchases.size) {
+            historyPurchases[i].productId?.let { productId ->
+                val containers = preferenceManager.containers
+                val products = preferenceManager.products
+                val product = getElementFromContainers(containers, products, productId)
+
+                product?.let { p ->
+                    historyPurchases[i].setDetails(product.skuDetails)
+                    historyPurchases[i].localizedTitle = product.localizedTitle
+                }
+            }
+        }
+    }
+
+    private fun getElementFromContainers(
+        containers: ArrayList<DataContainer>?,
+        prods: ArrayList<Product>,
+        id: String
+    ): Product? {
+        containers?.let {
+            for (i in 0 until containers.size) {
+                containers[i].attributes?.products?.let { products ->
+                    for (p in products) {
+                        if (p.vendorProductId.equals(id)) {
+                            return p
+                        }
+                    }
+                }
+            }
+        }
+        for (i in 0 until prods.size) {
+            if (prods[i].vendorProductId.equals(id))
+                return prods[i]
+        }
+        return null
+    }
+
+    private fun checkPurchasesHistoryForSync(historyPurchases: ArrayList<RestoreItem>) {
+        val savedPurchases = preferenceManager.syncedPurchases
+
+        if (savedPurchases.isEmpty() && historyPurchases.isNotEmpty() ||
+            savedPurchases.size < historyPurchases.size
+        ) {
+            apiClientRepository?.restore(
+                historyPurchases, currentLooper, object : AdaptyRestoreCallback {
+                    override fun onResult(
+                        response: RestoreReceiptResponse?,
+                        error: String?
+                    ) {
+                        if (error == null) {
+                            preferenceManager.syncedPurchases = historyPurchases
+                            success(null, response, error)
+                            return
+                        }
+
+                        fail(error)
+                    }
+                })
+        } else {
+            if (savedPurchases != historyPurchases) {
+                val notSynced = arrayListOf<RestoreItem>()
+                for (hp in historyPurchases) {
+                    if (!savedPurchases.contains(hp))
+                        notSynced.add(hp)
+                }
+
+                apiClientRepository?.restore(
+                    notSynced, currentLooper, object : AdaptyRestoreCallback {
+                        override fun onResult(
+                            response: RestoreReceiptResponse?,
+                            error: String?
+                        ) {
+                            if (error == null) {
+                                preferenceManager.syncedPurchases = historyPurchases
+                                success(null, response, error)
+                                return
+                            }
+
+                            fail(error)
+                        }
+                    })
+            } else
+                fail("No new purchases")
+        }
+
+//        var hasNew = false
+//
+//        for (savedPurchase in savedPurchases) {
+//            for (purchase in historyPurchases) {
+//                if (savedPurchase.productId == purchase.productId) {
+//                    if (savedPurchase.purchaseToken == pur)
+//                }
+//            }
+//        }
+
+
+    }
 
     private fun success(purchase: Purchase?, response: Any?, error: String?) {
-        if (isRestore) {
-            (adaptyCallback as AdaptyRestoreCallback).onResult(
-                if (response is RestoreReceiptResponse) response else null, error
-            )
-        } else {
-            (adaptyCallback as AdaptyPurchaseCallback).onResult(
-                purchase,
-                if (response is ValidateReceiptResponse) response else null,
-                error
-            )
-        }
+//        val handler = Handler(currentLooper)
+//        handler.post {
+            if (isRestore) {
+                (adaptyCallback as AdaptyRestoreCallback).onResult(
+                    if (response is RestoreReceiptResponse) response else null, error
+                )
+            } else {
+                (adaptyCallback as AdaptyPurchaseCallback).onResult(
+                    purchase,
+                    if (response is ValidateReceiptResponse) response else null,
+                    error
+                )
+            }
+//        }
     }
 
     private fun fail(error: String) {
-        if (isRestore) {
-            (adaptyCallback as AdaptyRestoreCallback).onResult(null, error)
-        } else {
-            (adaptyCallback as AdaptyPurchaseCallback).onResult(null, null, error)
+//        val handler = Handler(currentLooper)
+//        handler.post {
+            LogHelper.logError(error)
+            if (isRestore) {
+                (adaptyCallback as AdaptyRestoreCallback).onResult(null, error)
+            } else {
+                (adaptyCallback as AdaptyPurchaseCallback).onResult(null, null, error)
+            }
         }
-    }
+//    }
 }

@@ -1,9 +1,11 @@
 package com.adapty.purchase
 
 import android.app.Activity
+import android.content.Context
 import com.adapty.api.AdaptyPurchaseContainersInfoCallback
 import com.adapty.api.entity.containers.DataContainer
 import com.adapty.api.entity.containers.Product
+import com.adapty.utils.LogHelper
 import com.adapty.utils.formatPrice
 import com.android.billingclient.api.*
 import java.util.regex.Matcher
@@ -11,7 +13,7 @@ import java.util.regex.Pattern
 
 
 class InAppPurchasesInfo(
-    var activity: Activity,
+    var context: Context,
     var purchases: ArrayList<Any>,
     var callback: AdaptyPurchaseContainersInfoCallback
 ) {
@@ -36,8 +38,12 @@ class InAppPurchasesInfo(
     private fun setupBilling(data: Any) {
         if (!::billingClient.isInitialized) {
             billingClient =
-                BillingClient.newBuilder(activity).enablePendingPurchases()
-                    .setListener { _, _ -> }
+                BillingClient.newBuilder(context).enablePendingPurchases()
+                    .setListener { billingResult, mutableList ->
+                        if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                            fail(billingResult.debugMessage)
+                        }
+                    }
                     .build()
         }
         if (billingClient.isReady) {
@@ -47,6 +53,8 @@ class InAppPurchasesInfo(
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                         querySkuDetailsInApp(data)
+                    } else {
+                        fail(billingResult.debugMessage)
                     }
                 }
 
@@ -65,7 +73,7 @@ class InAppPurchasesInfo(
                 fillInfo(skuDetailsList, data)
                 querySkuDetailsSubs(data)
             } else
-                fail("Unavailable")
+                fail("Unavailable querySkuDetailsInApp: ${result.debugMessage}")
         }
     }
 
@@ -77,7 +85,7 @@ class InAppPurchasesInfo(
                 fillInfo(skuDetailsList, data)
                 iterator()
             } else
-                fail("Unavailable")
+                fail("Unavailable querySkuDetailsSubs: ${result.debugMessage}")
         }
     }
 
@@ -89,16 +97,7 @@ class InAppPurchasesInfo(
                     for (p in prods) {
                         p.vendorProductId?.let { id ->
                             if (sku == id) {
-//                                p.price = formatPrice(
-//                                    skuDetails.originalPrice,
-//                                    skuDetails.priceCurrencyCode
-//                                )
-//                                if (skuDetails.originalPrice != skuDetails.price)
-//                                    p.discountPrice =
-//                                        formatPrice(skuDetails.price, skuDetails.priceCurrencyCode)
-//                                p.priceLocale = skuDetails.priceCurrencyCode
-//                                p.type = skuDetails.type
-                                p.skuDetails = skuDetails
+                                p.setDetails(skuDetails)
                                 p.variationId = data.attributes?.variationId
                             }
                         }
@@ -108,14 +107,7 @@ class InAppPurchasesInfo(
                 for (p in (data as ArrayList<Product>)) {
                     p.vendorProductId?.let { id ->
                         if (sku == id) {
-//                            p.price =
-//                                formatPrice(skuDetails.originalPrice, skuDetails.priceCurrencyCode)
-//                            if (skuDetails.originalPrice != skuDetails.price)
-//                                p.discountPrice =
-//                                    formatPrice(skuDetails.price, skuDetails.priceCurrencyCode)
-//                            p.priceLocale = skuDetails.priceCurrencyCode
-//                            p.type = skuDetails.type
-                            p.skuDetails = skuDetails
+                            p.setDetails(skuDetails)
                         }
                     }
                 }
@@ -152,6 +144,7 @@ class InAppPurchasesInfo(
     }
 
     private fun fail(error: String) {
+        LogHelper.logError(error)
         callback.onResult(arrayListOf(), error)
     }
 }

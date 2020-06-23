@@ -3,15 +3,20 @@ package com.adapty.api
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import com.adapty.Adapty
 import com.adapty.api.requests.*
 import com.adapty.api.responses.*
 import com.adapty.utils.ADAPTY_SDK_VERSION_INT
+import com.adapty.utils.LogHelper
 import com.adapty.utils.PreferenceManager
 import com.google.gson.Gson
 import java.io.*
+import java.net.ConnectException
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
 
 const val AUTHORIZATION_KEY = "Authorization"
@@ -21,8 +26,9 @@ const val TIMEOUT = 30 * 1000
 
 class ApiClient(private var context: Context) {
 
+    private val serverUrl = "https://api-dev-3e4bc4bb0378bf.adapty.io/api/v1/"
 
-    private val serverUrl = "https://api-dev.adapty.io/api/v1/"
+    //    private val serverUrl = "https://www.google.com:81/"
     private val preferenceManager = PreferenceManager(context)
 
     companion object {
@@ -33,42 +39,144 @@ class ApiClient(private var context: Context) {
         const val RESTORE_PURCHASE_REQ_ID = 4
         const val GET_PROFILE_REQ_ID = 5
         const val GET_CONTAINERS_REQ_ID = 6
+        const val UPDATE_ATTRIBUTION_REQ_ID = 7
         const val POST = "POST"
+        const val PUT = "PUT"
         const val PATCH = "PATCH"
         const val GET = "GET"
     }
 
-    fun createProfile(request: CreateProfileRequest, adaptyCallback : AdaptyCallback?) {
-        post(generateUrl(CREATE_PROFILE_REQ_ID), request, CreateProfileResponse(), CREATE_PROFILE_REQ_ID, adaptyCallback)
+    fun createProfile(
+        request: CreateProfileRequest,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        post(
+            generateUrl(CREATE_PROFILE_REQ_ID),
+            request,
+            CreateProfileResponse(),
+            CREATE_PROFILE_REQ_ID,
+            currentLooper,
+            adaptyCallback
+        )
     }
 
-    fun updateProfile(request: UpdateProfileRequest, adaptyCallback : AdaptyCallback?) {
-        patch(generateUrl(UPDATE_PROFILE_REQ_ID), request, UpdateProfileResponse(), UPDATE_PROFILE_REQ_ID, adaptyCallback)
+    fun updateProfile(
+        request: UpdateProfileRequest,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        patch(
+            generateUrl(UPDATE_PROFILE_REQ_ID),
+            request,
+            UpdateProfileResponse(),
+            UPDATE_PROFILE_REQ_ID,
+            currentLooper,
+            adaptyCallback
+        )
     }
 
-    fun getProfile(request: PurchaserInfoRequest, adaptyCallback : AdaptyCallback?) {
-        get(generateUrl(GET_PROFILE_REQ_ID), request, PurchaserInfoResponse(), GET_PROFILE_REQ_ID, adaptyCallback)
+    fun getProfile(
+        request: PurchaserInfoRequest,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        get(
+            generateUrl(GET_PROFILE_REQ_ID),
+            request,
+            PurchaserInfoResponse(),
+            GET_PROFILE_REQ_ID,
+            currentLooper,
+            adaptyCallback
+        )
     }
 
-    fun getPurchaseContainers(request: PurchaseContainersRequest, adaptyCallback : AdaptyCallback?) {
-        get(generateUrl(GET_CONTAINERS_REQ_ID), request, PurchaseContainersResponse(), GET_CONTAINERS_REQ_ID, adaptyCallback)
+    fun getPurchaseContainers(
+        request: PurchaseContainersRequest,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        get(
+            generateUrl(GET_CONTAINERS_REQ_ID),
+            request,
+            PurchaseContainersResponse(),
+            GET_CONTAINERS_REQ_ID,
+            currentLooper,
+            adaptyCallback
+        )
     }
 
-    fun syncMeta(request: SyncMetaInstallRequest, adaptyCallback : AdaptyCallback?) {
-        post(generateUrl(SYNC_META_REQ_ID), request, SyncMetaInstallResponse(), SYNC_META_REQ_ID, adaptyCallback)
+    fun syncMeta(
+        request: SyncMetaInstallRequest,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        post(
+            generateUrl(SYNC_META_REQ_ID),
+            request,
+            SyncMetaInstallResponse(),
+            SYNC_META_REQ_ID,
+            currentLooper,
+            adaptyCallback
+        )
     }
 
-    fun validatePurchase(request: ValidateReceiptRequest, adaptyCallback : AdaptyCallback?) {
-        post(generateUrl(VALIDATE_PURCHASE_REQ_ID), request, ValidateReceiptResponse(), VALIDATE_PURCHASE_REQ_ID, adaptyCallback)
+    fun validatePurchase(
+        request: ValidateReceiptRequest,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        post(
+            generateUrl(VALIDATE_PURCHASE_REQ_ID),
+            request,
+            ValidateReceiptResponse(),
+            VALIDATE_PURCHASE_REQ_ID,
+            currentLooper,
+            adaptyCallback
+        )
     }
 
-    fun restorePurchase(request: RestoreReceiptRequest, adaptyCallback : AdaptyCallback?) {
-        post(generateUrl(RESTORE_PURCHASE_REQ_ID), request, RestoreReceiptResponse(), RESTORE_PURCHASE_REQ_ID, adaptyCallback)
+    fun restorePurchase(
+        request: RestoreReceiptRequest,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        post(
+            generateUrl(RESTORE_PURCHASE_REQ_ID),
+            request,
+            RestoreReceiptResponse(),
+            RESTORE_PURCHASE_REQ_ID,
+            currentLooper,
+            adaptyCallback
+        )
+    }
+
+    fun updateAttribution(
+        request: UpdateAttributionRequest,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        post(
+            generateUrl(UPDATE_ATTRIBUTION_REQ_ID),
+            request,
+            Any(),
+            UPDATE_ATTRIBUTION_REQ_ID,
+            currentLooper,
+            adaptyCallback
+        )
     }
 
     val gson = Gson()
 
-    private fun request(type: String, url: String, request: Any, oresponse: Any?, reqID: Int, adaptyCallback : AdaptyCallback?) {
+    private fun request(
+        type: String,
+        url: String,
+        request: Any,
+        oresponse: Any?,
+        reqID: Int,
+        currentLooper: Handler? = null,
+        adaptyCallback: AdaptyCallback?
+    ) {
 
         Thread(Runnable {
 
@@ -91,12 +199,23 @@ class ApiClient(private var context: Context) {
                 conn.setRequestProperty("ADAPTY-SDK-PROFILE-ID", preferenceManager.profileID)
                 conn.setRequestProperty("ADAPTY-SDK-PLATFORM", "Android")
                 conn.setRequestProperty("ADAPTY-SDK-VERSION", com.adapty.BuildConfig.VERSION_NAME)
-                conn.setRequestProperty("ADAPTY-SDK-VERSION-BUILD", ADAPTY_SDK_VERSION_INT.toString())
-                conn.setRequestProperty(AUTHORIZATION_KEY, API_KEY_PREFIX.plus(preferenceManager.appKey))
+                conn.setRequestProperty(
+                    "ADAPTY-SDK-VERSION-BUILD",
+                    ADAPTY_SDK_VERSION_INT.toString()
+                )
+                conn.setRequestProperty(
+                    AUTHORIZATION_KEY,
+                    API_KEY_PREFIX.plus(preferenceManager.appKey)
+                )
+
+                conn.setRequestProperty("Connection", "close")
+                System.setProperty("java.net.preferIPv4Stack", "true")
+                System.setProperty("http.keepAlive", "false")
 
                 conn.doInput = true
 
                 if (type != GET) {
+                    conn.doOutput = true
                     val os = conn.outputStream
                     val writer = BufferedWriter(OutputStreamWriter(os, "UTF-8"))
                     writer.write(req)
@@ -120,21 +239,29 @@ class ApiClient(private var context: Context) {
                     val inputStream = conn.inputStream
 
                     rString = toStringUtf8(inputStream)
-                    Log.e(com.adapty.api.TAG,"Response $myUrl: $rString")
+                    LogHelper.logVerbose("Response $myUrl: $rString")
 
                 } else {
                     rString = toStringUtf8(conn.errorStream)
-                    Log.e(com.adapty.api.TAG, "Response $myUrl: $rString")
-                    fail("Request is unsuccessful. Response Code: $response, Message: $rString", reqID, adaptyCallback)
+                    fail(
+                        "Request is unsuccessful. Url: $myUrl Response Code: $response, Message: $rString",
+                        reqID,
+                        currentLooper,
+                        adaptyCallback
+                    )
                     return@Runnable
                 }
+
             } catch (e: Exception) {
                 e.printStackTrace()
 
-                if (rString.isEmpty()) {
-                    fail("Unknown Error", reqID, adaptyCallback)
-                    return@Runnable
-                }
+                fail(
+                    "Request Exception. ${e.message} ${e.localizedMessage} Message: ${rString ?: ""}",
+                    reqID,
+                    currentLooper,
+                    adaptyCallback
+                )
+                return@Runnable
             }
 
             var responseObj: Any?
@@ -144,30 +271,57 @@ class ApiClient(private var context: Context) {
                     gson.fromJson(rString, oresponse.javaClass)
                 } else
                     rString
-                success(responseObj, reqID, adaptyCallback)
+                success(responseObj, reqID, currentLooper, adaptyCallback)
             } catch (e: Exception) {
                 e.printStackTrace()
                 responseObj = rString
-                success(responseObj, reqID, adaptyCallback)
+                success(responseObj, reqID, currentLooper, adaptyCallback)
             }
         }).start()
     }
 
-    private fun post(url: String, request: Any, oresponse: Any?, reqID: Int, adaptyCallback : AdaptyCallback?) {
-        request(POST, url, request, oresponse, reqID, adaptyCallback)
+    private fun post(
+        url: String,
+        request: Any,
+        oresponse: Any?,
+        reqID: Int,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        request(POST, url, request, oresponse, reqID, currentLooper, adaptyCallback)
     }
 
-    private fun patch(url: String, request: Any, oresponse: Any?, reqID: Int, adaptyCallback : AdaptyCallback?) {
-        request(PATCH, url, request, oresponse, reqID, adaptyCallback)
+    private fun patch(
+        url: String,
+        request: Any,
+        oresponse: Any?,
+        reqID: Int,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        request(PATCH, url, request, oresponse, reqID, currentLooper, adaptyCallback)
     }
 
-    private fun get(url: String, request: Any, oresponse: Any?, reqID: Int, adaptyCallback : AdaptyCallback?) {
-        request(GET, url, request, oresponse, reqID, adaptyCallback)
+    private fun get(
+        url: String,
+        request: Any,
+        oresponse: Any?,
+        reqID: Int,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        request(GET, url, request, oresponse, reqID, currentLooper, adaptyCallback)
     }
 
-    private fun success(response: Any?, reqID: Int, adaptyCallback : AdaptyCallback?) {
+    private fun success(
+        response: Any?,
+        reqID: Int,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        LogHelper.logVerbose("Response success $reqID")
         try {
-            val mainHandler = Handler(context.mainLooper)
+            val mainHandler = currentLooper ?: Handler(context.mainLooper)
             val myRunnable = Runnable {
                 adaptyCallback?.let {
                     when (it) {
@@ -199,16 +353,25 @@ class ApiClient(private var context: Context) {
                         }
                     }
                 }
+//                if (Looper.myLooper() != Looper.getMainLooper())
+//                    Looper.myLooper()?.quit()
             }
             mainHandler.post(myRunnable)
         } catch (e: Exception) {
-            Log.e("${com.adapty.api.TAG} success", e.localizedMessage)
+            LogHelper.logError("Callback success error $reqID: ${e.message} ${e.localizedMessage}")
         }
     }
 
-    private fun fail(error: String, reqID: Int, adaptyCallback : AdaptyCallback?) {
+    private fun fail(
+        error: String,
+        reqID: Int,
+        currentLooper: Handler?,
+        adaptyCallback: AdaptyCallback?
+    ) {
+        LogHelper.logError("Request failed $reqID $error")
         try {
-            val mainHandlerE = Handler(context.mainLooper)
+
+            val mainHandlerE = currentLooper ?: Handler(context.mainLooper)
             val myRunnableE = Runnable {
                 adaptyCallback?.let {
                     when (it) {
@@ -232,14 +395,17 @@ class ApiClient(private var context: Context) {
                         }
                     }
                 }
+                if (Looper.myLooper() != Looper.getMainLooper())
+                    Looper.myLooper()?.quit()
+                Looper.myLooper() = null
             }
             mainHandlerE.post(myRunnableE)
         } catch (e: Exception) {
-            Log.e("${com.adapty.api.TAG} fail", e.localizedMessage)
+            LogHelper.logError("Callback Fail error $reqID: ${e.message} ${e.localizedMessage}")
         }
     }
 
-    private fun toStringUtf8(inputStream: InputStream): String{
+    private fun toStringUtf8(inputStream: InputStream): String {
         val r = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8))
         val total = StringBuilder()
         var line: String? = r.readLine()
@@ -250,7 +416,7 @@ class ApiClient(private var context: Context) {
         return total.toString()
     }
 
-    private fun generateUrl(reqId: Int): String{
+    private fun generateUrl(reqId: Int): String {
         return when (reqId) {
             CREATE_PROFILE_REQ_ID, UPDATE_PROFILE_REQ_ID, GET_PROFILE_REQ_ID ->
                 serverUrl + "sdk/analytics/profiles/" + preferenceManager.profileID + "/"
@@ -262,6 +428,8 @@ class ApiClient(private var context: Context) {
                 serverUrl + "sdk/in-apps/google/token/restore/"
             GET_CONTAINERS_REQ_ID ->
                 serverUrl + "sdk/in-apps/purchase-containers/?profile_id=" + preferenceManager.profileID
+            UPDATE_ATTRIBUTION_REQ_ID ->
+                serverUrl + "sdk/analytics/profiles/" + preferenceManager.profileID + "/attribution/"
             else -> serverUrl
         }
     }
