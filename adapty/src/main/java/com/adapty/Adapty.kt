@@ -59,7 +59,6 @@ class Adapty {
             adaptyCallback: ((String?) -> Unit)?
         ) {
             LogHelper.logVerbose("activate($appKey, ${customerUserId ?: ""})")
-            val currentLooper = null
             if (isActivated)
                 return
 
@@ -70,7 +69,7 @@ class Adapty {
             this.preferenceManager.appKey = appKey
 
             addToQueue {
-                activateInQueue(context, appKey, customerUserId, currentLooper, adaptyCallback)
+                activateInQueue(context, appKey, customerUserId, adaptyCallback)
             }
         }
 
@@ -78,7 +77,6 @@ class Adapty {
             context: Context,
             appKey: String,
             customerUserId: String?,
-            currentLooper: Handler?,
             adaptyCallback: ((String?) -> Unit)?
         ) {
             this.context = context
@@ -87,7 +85,7 @@ class Adapty {
 
             if (preferenceManager.profileID.isEmpty()) {
                 ApiClientRepository.getInstance(preferenceManager)
-                    .createProfile(customerUserId, currentLooper, object : AdaptySystemCallback {
+                    .createProfile(customerUserId, object : AdaptySystemCallback {
                         override fun success(response: Any?, reqID: Int) {
                             if (response is CreateProfileResponse) {
                                 response.data?.attributes?.apply {
@@ -110,7 +108,7 @@ class Adapty {
 
                             sendSyncMetaInstallRequest(context)
 
-                            syncPurchasesBody(Companion.context, currentLooper, null)
+                            syncPurchasesBody(Companion.context, null)
 
 //                            periodicSyncPurchases(context)
 
@@ -147,8 +145,7 @@ class Adapty {
             getStartedPurchaseContainers(context)
 
             var isCallbackSent = false
-            val currentLooper = null
-            getPurchaserInfo(false, currentLooper) { info, state, error ->
+            getPurchaserInfo(false) { info, state, error ->
                 if (!isCallbackSent) {
                     isCallbackSent = true
                     adaptyCallback?.invoke(error)
@@ -162,7 +159,7 @@ class Adapty {
                     }
             }
 
-            syncPurchasesBody(context, currentLooper, null)
+            syncPurchasesBody(context, null)
         }
 
         private fun checkChangesPurchaserInfo(res: AttributePurchaserInfoRes) {
@@ -192,9 +189,8 @@ class Adapty {
 
         fun sendSyncMetaInstallRequest(applicationContext: Context) {
             LogHelper.logVerbose("sendSyncMetaInstallRequest()")
-            val currentLooper = null
             ApiClientRepository.getInstance(preferenceManager)
-                .syncMetaInstall(applicationContext, currentLooper, object : AdaptySystemCallback {
+                .syncMetaInstall(applicationContext, object : AdaptySystemCallback {
                     override fun success(response: Any?, reqID: Int) {
                         if (response is SyncMetaInstallResponse) {
                             response.data?.id?.let {
@@ -237,13 +233,11 @@ class Adapty {
 
         fun identify(customerUserId: String?, adaptyCallback: (String?) -> Unit) {
             LogHelper.logVerbose("identify()")
-            val currentLooper = null
-            addToQueue { identifyInQueue(customerUserId, currentLooper, adaptyCallback) }
+            addToQueue { identifyInQueue(customerUserId, adaptyCallback) }
         }
 
         private fun identifyInQueue(
             customerUserId: String?,
-            currentLooper: Handler?,
             adaptyCallback: (String?) -> Unit
         ) {
             if (!customerUserId.isNullOrEmpty() && preferenceManager.customerUserID.isNotEmpty()) {
@@ -255,7 +249,7 @@ class Adapty {
             }
 
             ApiClientRepository.getInstance(preferenceManager)
-                .createProfile(customerUserId, currentLooper, object : AdaptySystemCallback {
+                .createProfile(customerUserId, object : AdaptySystemCallback {
                     override fun success(response: Any?, reqID: Int) {
                         if (response is CreateProfileResponse) {
                             response.data?.attributes?.apply {
@@ -281,7 +275,7 @@ class Adapty {
 
                         sendSyncMetaInstallRequest(context)
 
-                        syncPurchasesBody(context, currentLooper, null)
+                        syncPurchasesBody(context, null)
                     }
 
                     override fun fail(msg: String, reqID: Int) {
@@ -306,7 +300,6 @@ class Adapty {
             birthday: String?, adaptyCallback: (String?) -> Unit
         ) {
             LogHelper.logVerbose("updateProfile()")
-            val currentLooper = null
             addToQueue {
                 ApiClientRepository.getInstance(preferenceManager).updateProfile(
                     email,
@@ -319,7 +312,6 @@ class Adapty {
                     lastName,
                     gender,
                     birthday,
-                    currentLooper,
                     object : AdaptyProfileCallback {
                         override fun onResult(error: String?) {
                             adaptyCallback.invoke(error)
@@ -333,7 +325,6 @@ class Adapty {
 
         private fun getPurchaserInfo(
             needQueue: Boolean,
-            currentLooper: Handler?,
             adaptyCallback: (purchaserInfo: PurchaserInfoModel?, state: String, error: String?) -> Unit
         ) {
             val info = preferenceManager.purchaserInfo
@@ -341,7 +332,7 @@ class Adapty {
                 adaptyCallback.invoke(it, "cached", null)
             }
 
-            ApiClientRepository.getInstance(preferenceManager).getProfile(currentLooper,
+            ApiClientRepository.getInstance(preferenceManager).getProfile(
                 object : AdaptyPurchaserInfoCallback {
                     override fun onResult(response: AttributePurchaserInfoRes?, error: String?) {
                         response?.let {
@@ -363,24 +354,13 @@ class Adapty {
         fun getPurchaserInfo(
             adaptyCallback: (purchaserInfo: PurchaserInfoModel?, state: String, error: String?) -> Unit
         ) {
-            var handler: Handler? = null
-            if (Thread.currentThread() != Looper.getMainLooper().thread) {
-                if (Looper.myLooper() == null)
-                    Looper.prepare()
-//            val currentLooper = null
-                handler = Handler()
-            }
-            addToQueue { getPurchaserInfo(true, handler, adaptyCallback) }
-            if (Thread.currentThread() != Looper.getMainLooper().thread)
-                Looper.loop()
+            addToQueue { getPurchaserInfo(true, adaptyCallback) }
         }
 
         private fun getStartedPurchaseContainers(context: Context) {
-            val currentLooper = null
             getPurchaseContainersInQueue(
                 context,
-                false,
-                currentLooper
+                false
             ) { containers, products, state, error -> }
         }
 
@@ -389,16 +369,14 @@ class Adapty {
             adaptyCallback: (containers: ArrayList<DataContainer>, products: ArrayList<Product>, state: String, error: String?) -> Unit
         ) {
             LogHelper.logVerbose("getPurchaseContainers()")
-            val currentLooper = null
             addToQueue {
-                getPurchaseContainersInQueue(activity, true, currentLooper, adaptyCallback)
+                getPurchaseContainersInQueue(activity, true, adaptyCallback)
             }
         }
 
         private fun getPurchaseContainersInQueue(
             context: Context,
             needQueue: Boolean,
-            currentLooper: Handler?,
             adaptyCallback: (containers: ArrayList<DataContainer>, products: ArrayList<Product>, state: String, error: String?) -> Unit
         ) {
             val cntrs = preferenceManager.containers
@@ -406,7 +384,7 @@ class Adapty {
                 adaptyCallback.invoke(it, preferenceManager.products, "cached", null)
             }
 
-            ApiClientRepository.getInstance(preferenceManager).getPurchaseContainers(currentLooper,
+            ApiClientRepository.getInstance(preferenceManager).getPurchaseContainers(
                 object : AdaptyPurchaseContainersCallback {
                     override fun onResult(
                         containers: ArrayList<DataContainer>,
@@ -506,7 +484,6 @@ class Adapty {
             adaptyCallback: (Purchase?, ValidateReceiptResponse?, String?) -> Unit
         ) {
             LogHelper.logVerbose("makePurchase()")
-            val currentLooper = null
             addToQueue {
                 InAppPurchases(
                     context,
@@ -517,7 +494,6 @@ class Adapty {
                     product,
                     variationId,
                     null,
-                    currentLooper,
                     object : AdaptyPurchaseCallback {
                         override fun onResult(
                             purchase: Purchase?,
@@ -532,15 +508,13 @@ class Adapty {
         }
 
         fun syncPurchases(adaptyCallback: (error: String?) -> Unit) {
-            val currentLooper = null
             addToQueue {
-                syncPurchasesBody(context, currentLooper, adaptyCallback)
+                syncPurchasesBody(context, adaptyCallback)
             }
         }
 
         private fun syncPurchasesBody(
             context: Context,
-            currentLooper: Handler?,
             adaptyCallback: ((String?) -> Unit)?
         ) {
             if (!::preferenceManager.isInitialized)
@@ -554,7 +528,6 @@ class Adapty {
                 Product(),
                 null,
                 ApiClientRepository.getInstance(preferenceManager),
-                currentLooper,
                 object : AdaptyRestoreCallback {
                     override fun onResult(response: RestoreReceiptResponse?, error: String?) {
                         if (adaptyCallback != null) {
@@ -569,8 +542,7 @@ class Adapty {
         }
 
         private fun periodicSyncPurchases(
-            context: Context,
-            currentLooper: Handler?
+            context: Context
         ) {
             if (!::preferenceManager.isInitialized)
                 preferenceManager = PreferenceManager(context)
@@ -585,7 +557,6 @@ class Adapty {
                     Product(),
                     null,
                     ApiClientRepository.getInstance(preferenceManager),
-                    currentLooper,
                     object : AdaptyRestoreCallback {
                         override fun onResult(response: RestoreReceiptResponse?, error: String?) {
                             runnablePurchasesHistory?.let {
@@ -598,9 +569,8 @@ class Adapty {
             handlerPurchasesHistory.postDelayed(runnablePurchasesHistory, SYNC_PURCHASES_INTERVAL)
         }
 
-        private fun restorePurchases(
+        fun restorePurchases(
             activity: Activity,
-            currentLooper: Handler?,
             adaptyCallback: (RestoreReceiptResponse?, String?) -> Unit
         ) {
 
@@ -619,7 +589,6 @@ class Adapty {
                     Product(),
                     null,
                     ApiClientRepository.getInstance(preferenceManager),
-                    currentLooper,
                     object : AdaptyRestoreCallback {
                         override fun onResult(response: RestoreReceiptResponse?, error: String?) {
                             adaptyCallback.invoke(response, error)
@@ -634,14 +603,6 @@ class Adapty {
             }
         }
 
-        fun restorePurchases(
-            activity: Activity,
-            adaptyCallback: (RestoreReceiptResponse?, String?) -> Unit
-        ) {
-            val currentLooper = null
-            restorePurchases(activity, currentLooper, adaptyCallback)
-        }
-
         fun validatePurchase(
             purchaseType: String,
             productId: String,
@@ -650,34 +611,12 @@ class Adapty {
             product: Product? = null,
             adaptyCallback: (ValidateReceiptResponse?, error: String?) -> Unit
         ) {
-            val currentLooper = null
             validate(
                 purchaseType,
                 productId,
                 purchaseToken,
                 purchaseOrderId,
                 product,
-                currentLooper,
-                adaptyCallback
-            )
-        }
-
-        fun validatePurchase(
-            purchaseType: String,
-            productId: String,
-            purchaseToken: String,
-            purchaseOrderId: String? = null,
-            product: Product? = null,
-            currentLooper: Handler?,
-            adaptyCallback: (ValidateReceiptResponse?, error: String?) -> Unit
-        ) {
-            validate(
-                purchaseType,
-                productId,
-                purchaseToken,
-                purchaseOrderId,
-                product,
-                currentLooper,
                 adaptyCallback
             )
         }
@@ -688,7 +627,6 @@ class Adapty {
             purchaseToken: String,
             purchaseOrderId: String? = null,
             product: Product? = null,
-            currentLooper: Handler?,
             adaptyCallback: (ValidateReceiptResponse?, error: String?) -> Unit
         ) {
             LogHelper.logVerbose("validatePurchase()")
@@ -701,7 +639,6 @@ class Adapty {
                             purchaseToken,
                             purchaseOrderId,
                             product,
-                            currentLooper,
                             object : AdaptyValidateCallback {
                                 override fun onResult(
                                     response: ValidateReceiptResponse?,
@@ -724,7 +661,6 @@ class Adapty {
                         purchaseToken,
                         purchaseOrderId,
                         product,
-                        currentLooper,
                         object : AdaptyValidateCallback {
                             override fun onResult(
                                 response: ValidateReceiptResponse?,
@@ -745,15 +681,13 @@ class Adapty {
             attribution: Any,
             source: String
         ) {
-            val currentLooper = null
-            updateAttribution(attribution, source, null, currentLooper)
+            updateAttribution(attribution, source, null)
         }
 
         fun updateAttribution(
             attribution: Any,
             source: String,
-            networkUserId: String?,
-            currentLooper: Handler?
+            networkUserId: String?
         ) {
             LogHelper.logVerbose("updateAttribution()")
             addToQueue {
@@ -761,7 +695,6 @@ class Adapty {
                     attribution,
                     source,
                     networkUserId,
-                    currentLooper,
                     object : AdaptyProfileCallback {
                         override fun onResult(error: String?) {
                             nextQueue()
@@ -773,11 +706,10 @@ class Adapty {
 
         fun logout(adaptyCallback: (String?) -> Unit) {
             LogHelper.logVerbose("logout()")
-            val currentLooper = null
-            addToQueue { logoutInQueue(currentLooper, adaptyCallback) }
+            addToQueue { logoutInQueue(adaptyCallback) }
         }
 
-        private fun logoutInQueue(currentLooper: Handler?, adaptyCallback: (String?) -> Unit) {
+        private fun logoutInQueue(adaptyCallback: (String?) -> Unit) {
             if (!::context.isInitialized) {
                 adaptyCallback.invoke("Adapty was not initialized")
                 nextQueue()
@@ -794,7 +726,7 @@ class Adapty {
             preferenceManager.containers = null
             preferenceManager.products = arrayListOf()
 
-            activateInQueue(context, preferenceManager.appKey, null, currentLooper, adaptyCallback)
+            activateInQueue(context, preferenceManager.appKey, null, adaptyCallback)
         }
 
         fun setOnPurchaserInfoUpdatedListener(onPurchaserInfoUpdatedListener: OnPurchaserInfoUpdatedListener?) {

@@ -27,7 +27,6 @@ class InAppPurchases(
     var product: Product,
     var variationId: String?,
     var apiClientRepository: ApiClientRepository?,
-    var currentLooper: Handler?,
     var adaptyCallback: AdaptyCallback
 ) {
 
@@ -63,8 +62,7 @@ class InAppPurchases(
                                             purchase.sku,
                                             purchase.purchaseToken,
                                             purchase.orderId,
-                                            product,
-                                            currentLooper
+                                            product
                                         ) { response, error ->
                                             success(purchase, response, error)
                                         }
@@ -88,8 +86,7 @@ class InAppPurchases(
                                             purchase.sku,
                                             p1,
                                             purchase.orderId,
-                                            product,
-                                            currentLooper
+                                            product
                                         ) { response, error ->
                                             success(purchase, response, error)
                                         }
@@ -298,7 +295,7 @@ class InAppPurchases(
             savedPurchases.size < historyPurchases.size
         ) {
             apiClientRepository?.restore(
-                historyPurchases, currentLooper, object : AdaptyRestoreCallback {
+                historyPurchases, object : AdaptyRestoreCallback {
                     override fun onResult(
                         response: RestoreReceiptResponse?,
                         error: String?
@@ -321,7 +318,7 @@ class InAppPurchases(
                 }
 
                 apiClientRepository?.restore(
-                    notSynced, currentLooper, object : AdaptyRestoreCallback {
+                    notSynced, object : AdaptyRestoreCallback {
                         override fun onResult(
                             response: RestoreReceiptResponse?,
                             error: String?

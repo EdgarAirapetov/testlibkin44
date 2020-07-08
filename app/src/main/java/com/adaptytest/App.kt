@@ -16,11 +16,11 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        Adapty.activate(
-            this,
-            "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU",
-            null
-        )
+//        Adapty.activate(
+//            this,
+//            "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU",
+//            null
+//        )
 
         val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
             override fun onConversionDataSuccess(conversionData: Map<String, Any>) {

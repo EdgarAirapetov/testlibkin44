@@ -48,7 +48,6 @@ class ApiClient(private var context: Context) {
 
     fun createProfile(
         request: CreateProfileRequest,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         post(
@@ -56,14 +55,12 @@ class ApiClient(private var context: Context) {
             request,
             CreateProfileResponse(),
             CREATE_PROFILE_REQ_ID,
-            currentLooper,
             adaptyCallback
         )
     }
 
     fun updateProfile(
         request: UpdateProfileRequest,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         patch(
@@ -71,14 +68,12 @@ class ApiClient(private var context: Context) {
             request,
             UpdateProfileResponse(),
             UPDATE_PROFILE_REQ_ID,
-            currentLooper,
             adaptyCallback
         )
     }
 
     fun getProfile(
         request: PurchaserInfoRequest,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         get(
@@ -86,14 +81,12 @@ class ApiClient(private var context: Context) {
             request,
             PurchaserInfoResponse(),
             GET_PROFILE_REQ_ID,
-            currentLooper,
             adaptyCallback
         )
     }
 
     fun getPurchaseContainers(
         request: PurchaseContainersRequest,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         get(
@@ -101,14 +94,12 @@ class ApiClient(private var context: Context) {
             request,
             PurchaseContainersResponse(),
             GET_CONTAINERS_REQ_ID,
-            currentLooper,
             adaptyCallback
         )
     }
 
     fun syncMeta(
         request: SyncMetaInstallRequest,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         post(
@@ -116,14 +107,12 @@ class ApiClient(private var context: Context) {
             request,
             SyncMetaInstallResponse(),
             SYNC_META_REQ_ID,
-            currentLooper,
             adaptyCallback
         )
     }
 
     fun validatePurchase(
         request: ValidateReceiptRequest,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         post(
@@ -131,14 +120,12 @@ class ApiClient(private var context: Context) {
             request,
             ValidateReceiptResponse(),
             VALIDATE_PURCHASE_REQ_ID,
-            currentLooper,
             adaptyCallback
         )
     }
 
     fun restorePurchase(
         request: RestoreReceiptRequest,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         post(
@@ -146,14 +133,12 @@ class ApiClient(private var context: Context) {
             request,
             RestoreReceiptResponse(),
             RESTORE_PURCHASE_REQ_ID,
-            currentLooper,
             adaptyCallback
         )
     }
 
     fun updateAttribution(
         request: UpdateAttributionRequest,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         post(
@@ -161,7 +146,6 @@ class ApiClient(private var context: Context) {
             request,
             Any(),
             UPDATE_ATTRIBUTION_REQ_ID,
-            currentLooper,
             adaptyCallback
         )
     }
@@ -174,7 +158,6 @@ class ApiClient(private var context: Context) {
         request: Any,
         oresponse: Any?,
         reqID: Int,
-        currentLooper: Handler? = null,
         adaptyCallback: AdaptyCallback?
     ) {
 
@@ -246,7 +229,6 @@ class ApiClient(private var context: Context) {
                     fail(
                         "Request is unsuccessful. Url: $myUrl Response Code: $response, Message: $rString",
                         reqID,
-                        currentLooper,
                         adaptyCallback
                     )
                     return@Runnable
@@ -258,7 +240,6 @@ class ApiClient(private var context: Context) {
                 fail(
                     "Request Exception. ${e.message} ${e.localizedMessage} Message: ${rString ?: ""}",
                     reqID,
-                    currentLooper,
                     adaptyCallback
                 )
                 return@Runnable
@@ -271,11 +252,11 @@ class ApiClient(private var context: Context) {
                     gson.fromJson(rString, oresponse.javaClass)
                 } else
                     rString
-                success(responseObj, reqID, currentLooper, adaptyCallback)
+                success(responseObj, reqID, adaptyCallback)
             } catch (e: Exception) {
                 e.printStackTrace()
                 responseObj = rString
-                success(responseObj, reqID, currentLooper, adaptyCallback)
+                success(responseObj, reqID, adaptyCallback)
             }
         }).start()
     }
@@ -285,10 +266,9 @@ class ApiClient(private var context: Context) {
         request: Any,
         oresponse: Any?,
         reqID: Int,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
-        request(POST, url, request, oresponse, reqID, currentLooper, adaptyCallback)
+        request(POST, url, request, oresponse, reqID, adaptyCallback)
     }
 
     private fun patch(
@@ -296,10 +276,9 @@ class ApiClient(private var context: Context) {
         request: Any,
         oresponse: Any?,
         reqID: Int,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
-        request(PATCH, url, request, oresponse, reqID, currentLooper, adaptyCallback)
+        request(PATCH, url, request, oresponse, reqID, adaptyCallback)
     }
 
     private fun get(
@@ -307,21 +286,19 @@ class ApiClient(private var context: Context) {
         request: Any,
         oresponse: Any?,
         reqID: Int,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
-        request(GET, url, request, oresponse, reqID, currentLooper, adaptyCallback)
+        request(GET, url, request, oresponse, reqID, adaptyCallback)
     }
 
     private fun success(
         response: Any?,
         reqID: Int,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         LogHelper.logVerbose("Response success $reqID")
         try {
-            val mainHandler = currentLooper ?: Handler(context.mainLooper)
+            val mainHandler = Handler(context.mainLooper)
             val myRunnable = Runnable {
                 adaptyCallback?.let {
                     when (it) {
@@ -365,13 +342,12 @@ class ApiClient(private var context: Context) {
     private fun fail(
         error: String,
         reqID: Int,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback?
     ) {
         LogHelper.logError("Request failed $reqID $error")
         try {
 
-            val mainHandlerE = currentLooper ?: Handler(context.mainLooper)
+            val mainHandlerE = Handler(context.mainLooper)
             val myRunnableE = Runnable {
                 adaptyCallback?.let {
                     when (it) {
@@ -395,9 +371,6 @@ class ApiClient(private var context: Context) {
                         }
                     }
                 }
-                if (Looper.myLooper() != Looper.getMainLooper())
-                    Looper.myLooper()?.quit()
-                Looper.myLooper() = null
             }
             mainHandlerE.post(myRunnableE)
         } catch (e: Exception) {

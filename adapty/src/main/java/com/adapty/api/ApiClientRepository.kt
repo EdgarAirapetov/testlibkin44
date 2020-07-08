@@ -39,7 +39,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
 
     private var apiClient = ApiClient(context)
 
-    fun createProfile(customerUserId: String?, currentLooper: Handler?, adaptyCallback: AdaptyCallback) {
+    fun createProfile(customerUserId: String?, adaptyCallback: AdaptyCallback) {
 
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
@@ -57,7 +57,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
             profileRequest.data?.attributes?.customerUserId = customerUserId
         }
 
-        apiClient.createProfile(profileRequest, currentLooper, adaptyCallback)
+        apiClient.createProfile(profileRequest, adaptyCallback)
     }
 
     fun updateProfile(
@@ -71,7 +71,6 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         lastName: String?,
         gender: String?,
         birthday: String?,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback
     ) {
 
@@ -99,11 +98,10 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
             this.birthday = birthday
         }
 
-        apiClient.updateProfile(profileRequest, currentLooper, adaptyCallback)
+        apiClient.updateProfile(profileRequest, adaptyCallback)
     }
 
     fun getProfile(
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback
     ) {
         var uuid = preferenceManager.profileID
@@ -116,11 +114,10 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         purchaserInfoRequest.data = BaseData()
         purchaserInfoRequest.data?.id = uuid
 
-        apiClient.getProfile(purchaserInfoRequest, currentLooper, adaptyCallback)
+        apiClient.getProfile(purchaserInfoRequest, adaptyCallback)
     }
 
     fun getPurchaseContainers(
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback
     ) {
         var uuid = preferenceManager.profileID
@@ -133,10 +130,10 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         request.data = BaseData()
         request.data?.id = uuid
 
-        apiClient.getPurchaseContainers(request, currentLooper, adaptyCallback)
+        apiClient.getPurchaseContainers(request, adaptyCallback)
     }
 
-    fun syncMetaInstall(applicationContext: Context, currentLooper: Handler?, adaptyCallback: AdaptyCallback? = null) {
+    fun syncMetaInstall(applicationContext: Context, adaptyCallback: AdaptyCallback? = null) {
 
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
@@ -197,7 +194,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
                     if (advertId != null) {
                         syncMetaRequest.data?.attributes?.advertisingId = advertId
                     }
-                    apiClient.syncMeta(syncMetaRequest, currentLooper, adaptyCallback)
+                    apiClient.syncMeta(syncMetaRequest, adaptyCallback)
                 }
             }
         task.execute()
@@ -210,7 +207,6 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         purchaseToken: String,
         purchaseOrderId: String?,
         product: Product?,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback? = null
     ) {
         var uuid = preferenceManager.profileID
@@ -246,10 +242,10 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         }
 
 
-        apiClient.validatePurchase(validateReceiptRequest, currentLooper, adaptyCallback)
+        apiClient.validatePurchase(validateReceiptRequest, adaptyCallback)
     }
 
-    fun restore(purchases: ArrayList<RestoreItem>,currentLooper: Handler?,  adaptyCallback: AdaptyCallback? = null) {
+    fun restore(purchases: ArrayList<RestoreItem>, adaptyCallback: AdaptyCallback? = null) {
         var uuid = preferenceManager.profileID
         if (uuid.isEmpty()) {
             uuid = generateUuid().toString()
@@ -264,14 +260,13 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
         restoreReceiptRequest.data?.attributes?.profileId = uuid
         restoreReceiptRequest.data?.attributes?.restoreItems = purchases
 
-        apiClient.restorePurchase(restoreReceiptRequest, currentLooper, adaptyCallback)
+        apiClient.restorePurchase(restoreReceiptRequest, adaptyCallback)
     }
 
     fun updateAttribution(
         attribution: Any,
         source: String,
         networkUserId: String?,
-        currentLooper: Handler?,
         adaptyCallback: AdaptyCallback? = null
     ) {
         var uuid = preferenceManager.profileID
@@ -300,7 +295,7 @@ class ApiClientRepository(var preferenceManager: PreferenceManager) {
 
 
 
-        apiClient.updateAttribution(updateAttributionRequest, currentLooper, adaptyCallback)
+        apiClient.updateAttribution(updateAttributionRequest, adaptyCallback)
     }
 
     companion object Factory {

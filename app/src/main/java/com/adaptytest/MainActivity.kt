@@ -36,6 +36,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         progressDialog = ProgressDialog(this)
+        Adapty.activate(this, "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU")
+        Adapty.getPurchaserInfo { purchaserInfo, state, error ->
+            Log.e("", "")
+        }
 
 //        progressDialog?.show()
 
@@ -75,50 +79,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         purchaser_info.setOnClickListener {
-//            progressDialog?.show()
-            val curLoop = Looper.myLooper()
-            Observable.fromCallable {
-                (Adapty.getPurchaserInfo { purchaserInfo, state, error ->
-//                    progressDialog?.dismiss()
-//                    profile_id_tv.text = Adapty.getProfileId()
-                    purchaserInfo?.let {
-//                        errorsTv.text = "state: $state \n ${Gson().toJson(it)}"
-                        Log.e("Successful response", "state: $state \n ${Gson().toJson(it)}")
-                    } ?: kotlin.run {
-//                        errorsTv.text = error ?: "Empty response attributes"
-                        Log.e("onSuccess", error ?: "Empty response attributes")
-                    }
-                })
-            }.subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.computation())
-                .subscribe({
-                    Log.e("onSuccess", "success")
-                }, { t ->
-                    Log.e("onError", t.message)
-                })
-
-//                }
-
-//                Single
-//                    .create<PurchaserInfoModel> { emitter ->
-//                        Adapty.getPurchaserInfo { purchaserInfo, state, error ->
-//                            if (error.isNullOrBlank()) {
-//                                if (!emitter.isDisposed) {
-//                                    purchaserInfo?.let(emitter::onSuccess) ?: emitter.onError(Exception())
-//                                }
-//                            } else {
-//                                if (!emitter.isDisposed) {
-//                                    emitter.onError(Exception())
-//                                }
-//                            }
-//                        }
-//                    }
-//                    .observeOn(AndroidSchedulers.mainThread())
-//                    .subscribe{p ->
-//                        Log.e("", "")
-//                    }// Adapty callbacks are called on the main thread
-
-
+            progressDialog?.show()
+            Adapty.getPurchaserInfo { purchaserInfo, state, error ->
+                progressDialog?.dismiss()
+                profile_id_tv.text = Adapty.getProfileId()
+                purchaserInfo?.let {
+                        errorsTv.text = "state: $state \n ${Gson().toJson(it)}"
+//                    Log.e("Successful response", "state: $state \n ${Gson().toJson(it)}")
+                } ?: kotlin.run {
+                        errorsTv.text = error ?: "Empty response attributes"
+//                    Log.e("onSuccess", error ?: "Empty response attributes")
+                }
+            }
         }
 
         containers_get_cached.setOnClickListener {
