@@ -37,9 +37,7 @@ class MainActivity : AppCompatActivity() {
 
         progressDialog = ProgressDialog(this)
         Adapty.activate(this, "public_live_7Ei6YwqY.8fRoPRhM2lngcCVXEPFU")
-        Adapty.getPurchaserInfo { purchaserInfo, state, error ->
-            Log.e("", "")
-        }
+
 
 //        progressDialog?.show()
 
